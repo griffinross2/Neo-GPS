@@ -1,0 +1,5 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "CustomSymbols") (type "KiCad") (uri "C:/Users/griff/OneDrive/Documents/Neo-GPS/Hardware/Libs/CustomSymbols.kicad_sym") (options "") (descr ""))
+	(lib (name "CustomSymbolsTT") (type "KiCad") (uri "C:/Users/griff/OneDrive/Documents/Trimbot/hardware/PCB/Libraries/CustomSymbols.kicad_sym") (options "") (descr ""))
+)
