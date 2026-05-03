@@ -1,14 +1,13 @@
 // Include common routines
 #include <verilated.h>
+#include <verilated_vcd_c.h>
 
 // Include model header, generated from Verilating "top.v"
 #include "Vuart_tx.h"
 
-unsigned int main_time = 0;
-
 double sc_time_stamp()
 {
-    return (double)main_time;
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -26,16 +25,26 @@ int main(int argc, char **argv)
     // This needs to be called before you create any model
     contextp->commandArgs(argc, argv);
 
+    contextp->traceEverOn(true);
+    contextp->threads(1);
+
+    VerilatedVcdC *tfp = new VerilatedVcdC;
+
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vuart_tx *const top = new Vuart_tx{contextp};
+
+    top->trace(tfp, 99);
+    tfp->open("waveform.vcd");
 
     // Simulate until $finish
     while (!contextp->gotFinish())
     {
-        main_time++;
+        contextp->timeInc(1);
 
         // Evaluate model
         top->eval();
+
+        tfp->dump(contextp->time());
     }
 
     // Final model cleanup
@@ -43,6 +52,9 @@ int main(int argc, char **argv)
 
     // Destroy model
     delete top;
+
+    // Final simulation summary
+    contextp->statsPrintSummary();
 
     // Return good completion status
     return 0;

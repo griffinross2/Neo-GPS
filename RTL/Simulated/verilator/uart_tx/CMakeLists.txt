@@ -25,5 +25,5 @@ set(RTL_SOURCES ../../src/uart_tx.sv
 verilate(uart_tx
     INCLUDE_DIR .
     SOURCES ${RTL_SOURCES}
-    VERILATOR_ARGS --timing --top uart_tx_tb
+    VERILATOR_ARGS --timing --trace --threads 1 --top uart_tx_tb
 )
