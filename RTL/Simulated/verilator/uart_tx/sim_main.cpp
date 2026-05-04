@@ -1,6 +1,6 @@
 // Include common routines
 #include <verilated.h>
-#include <verilated_vcd_c.h>
+#include <verilated_fst_c.h>
 
 // Include model header, generated from Verilating "top.v"
 #include "Vuart_tx.h"
@@ -28,13 +28,15 @@ int main(int argc, char **argv)
     contextp->traceEverOn(true);
     contextp->threads(1);
 
-    VerilatedVcdC *tfp = new VerilatedVcdC;
+    VerilatedFstC *tfp = new VerilatedFstC;
+    tfp->set_time_unit("ns");
+    tfp->set_time_resolution("ns");
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vuart_tx *const top = new Vuart_tx{contextp};
 
     top->trace(tfp, 99);
-    tfp->open("waveform.vcd");
+    tfp->open("outputs/uart_tx/waveform.fst");
 
     // Simulate until $finish
     while (!contextp->gotFinish())

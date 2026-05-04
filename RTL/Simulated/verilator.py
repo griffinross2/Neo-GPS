@@ -4,27 +4,34 @@ import os
 import shutil
 
 def build(dir):
-    if not os.path.exists(f'verilator/{dir}/build'):
-        os.mkdir(f'verilator/{dir}/build')
+    if not os.path.exists('build'):
+        os.mkdir('build')
 
     try:
         # Run the command
-        subprocess.run('cmake ..', cwd=f'verilator/{dir}/build', check=True)
-        subprocess.run('cmake --build .', cwd=f'verilator/{dir}/build', check=True)
+        subprocess.run('cmake .. -G "MinGW Makefiles"', cwd='build', check=True)
+        subprocess.run(f'cmake --build . --target {dir}', cwd='build', check=True)
         print(f"Verilation successful.")
     except subprocess.CalledProcessError as e:
         print(f"Error during verilation: {e}")
 
 def run(dir):
+    # Ensure outputs exists
+    if not os.path.exists('outputs'):
+        os.mkdir('outputs')
+
+    if not os.path.exists(f'outputs/{dir}'):
+        os.mkdir(f'outputs/{dir}')
+
     try:
         # Run the command
-        subprocess.run(f'Debug\\{dir}.exe', cwd=f'verilator/{dir}/build', check=True, shell=True)
+        subprocess.run(f'build\\verilator\\{dir}\\{dir}.exe', check=True, shell=True)
         print(f"Simulation successful.")
     except subprocess.CalledProcessError as e:
         print(f"Error during simulation: {e}")
 
 def clean(dir):
-    shutil.rmtree(f'verilator/{dir}/build')
+    shutil.rmtree('build')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Verilate a Verilog source file.')

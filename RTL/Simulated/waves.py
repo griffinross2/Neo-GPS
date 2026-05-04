@@ -5,20 +5,20 @@ import glob
 
 def view(dir):
     # Check if wavefile exists
-    if not os.path.exists(f'verilator/{dir}/build/waveform.vcd'):
+    if not os.path.exists(f'outputs/{dir}/waveform.fst'):
         print(f"Error: No waveform file found for project '{dir}'.")
         return
 
     # Check if there is already a savefile
-    savefile = glob.glob(f'verilator/{dir}/*.gtkw')
+    savefile = glob.glob(f'outputs/{dir}/*.gtkw')
 
     try:
         # Run the command
         if len(savefile) == 0:
-            subprocess.run(f'gtkwave build/waveform.vcd', cwd=f'verilator/{dir}', check=True, shell=True)
+            subprocess.run(f'gtkwave outputs/{dir}/waveform.fst', check=True, shell=True)
         else:
-            savefile = savefile[0].split('\\')[-1].split('/')[-1]
-            subprocess.run(f'gtkwave build/waveform.vcd -a {savefile}', cwd=f'verilator/{dir}', check=True, shell=True)
+            savefile[0] = savefile[0].replace('\\', '/')
+            subprocess.run(f'gtkwave outputs/{dir}/waveform.fst -a {savefile[0]}', check=True, shell=True)
         print(f"Waveform viewer launched successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error launching waveform viewer: {e}")

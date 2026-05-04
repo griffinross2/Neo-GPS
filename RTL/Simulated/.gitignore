@@ -1,3 +1,2 @@
-verilated/
-verilate_objs/
-vcpkg_installed/
+build/
+outputs/
