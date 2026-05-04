@@ -49,9 +49,11 @@ int main(int argc, char **argv)
 
     // Final model cleanup
     top->final();
+    tfp->close();
 
     // Destroy model
     delete top;
+    delete tfp;
 
     // Final simulation summary
     contextp->statsPrintSummary();

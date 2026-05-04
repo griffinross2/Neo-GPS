@@ -1,0 +1,66 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Mon May 04 04:38:32 2026
+[*]
+[dumpfile] "C:\Users\griff\OneDrive\Documents\Neo-GPS\RTL\Simulated\verilator\uart_rx\build\waveform.vcd"
+[dumpfile_mtime] "Mon May 04 04:20:27 2026"
+[dumpfile_size] 38868101
+[savefile] "C:\Users\griff\OneDrive\Documents\Neo-GPS\RTL\Simulated\verilator\uart_rx\wave.gtkw"
+[timestart] 1
+[size] 3440 1369
+[pos] -61 -61
+*-19.000000 1315000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.uart_rx_tb.
+[sst_width] 197
+[signals_width] 222
+[sst_expanded] 1
+[sst_vpaned_height] 424
+@28
+TOP.uart_rx_tb.dut.bit_count[2:0]
+TOP.uart_rx_tb.dut.bit_count_n[2:0]
+@22
+TOP.uart_rx_tb.dut.bit_period[15:0]
+@28
+TOP.uart_rx_tb.dut.clk
+@22
+TOP.uart_rx_tb.dut.data[7:0]
+@28
+TOP.uart_rx_tb.dut.data_strobe
+TOP.uart_rx_tb.dut.nrst
+TOP.uart_rx_tb.dut.rx_busy
+TOP.uart_rx_tb.dut.rx_done
+TOP.uart_rx_tb.dut.serial_in
+TOP.uart_rx_tb.dut.serial_in_sync
+#{TOP.uart_rx_tb.dut.serial_reg[1:0]} TOP.uart_rx_tb.dut.serial_reg[1] TOP.uart_rx_tb.dut.serial_reg[0]
+TOP.uart_rx_tb.dut.state[1:0]
+TOP.uart_rx_tb.dut.state_n[1:0]
+@22
+TOP.uart_rx_tb.dut.sync_bit_counter[15:0]
+TOP.uart_rx_tb.dut.sync_bit_counter_n[15:0]
+@201
+-
+@28
+TOP.uart_rx_tb.tx.bit_count[2:0]
+TOP.uart_rx_tb.tx.bit_count_n[2:0]
+@22
+TOP.uart_rx_tb.tx.bit_period[15:0]
+@28
+TOP.uart_rx_tb.tx.bit_strobe
+@22
+TOP.uart_rx_tb.tx.bit_strobe_count[15:0]
+@28
+TOP.uart_rx_tb.tx.clk
+@22
+TOP.uart_rx_tb.tx.data[7:0]
+@28
+TOP.uart_rx_tb.tx.nrst
+TOP.uart_rx_tb.tx.serial_out
+TOP.uart_rx_tb.tx.serial_out_n
+TOP.uart_rx_tb.tx.start
+TOP.uart_rx_tb.tx.state[1:0]
+TOP.uart_rx_tb.tx.state_n[1:0]
+TOP.uart_rx_tb.tx.tx_busy
+TOP.uart_rx_tb.tx.tx_done
+[pattern_trace] 1
+[pattern_trace] 0
