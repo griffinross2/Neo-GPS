@@ -2,8 +2,8 @@
 add_executable(spi_tx_tb sim_main.cpp)
 
 set(RTL_SOURCES
-    ../../testbench/spi_tx_tb.sv
-    ../../src/spi_tx.sv
+    ../../testbench/spi/spi_tx_tb.sv
+    ../../src/spi/spi_tx.sv
 )
 
 # Add the Verilated circuit to the target

@@ -2,8 +2,8 @@
 add_executable(uart_tx_tb sim_main.cpp)
 
 set(RTL_SOURCES
-    ../../testbench/uart_tx_tb.sv
-    ../../src/uart_tx.sv
+    ../../testbench/uart/uart_tx_tb.sv
+    ../../src/uart/uart_tx.sv
 )
 
 # Add the Verilated circuit to the target

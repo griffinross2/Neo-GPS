@@ -2,8 +2,8 @@
 add_executable(sd_tb sim_main.cpp)
 
 set(RTL_SOURCES
-    ../../testbench/sd_tb.sv
-    ../../src/sd_cmd.sv
+    ../../testbench/sd/sd_tb.sv
+    ../../src/sd/sd_cmd.sv
 )
 
 # Add the Verilated circuit to the target

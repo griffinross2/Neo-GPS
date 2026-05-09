@@ -2,8 +2,8 @@
 add_executable(l1ca_code_tb sim_main.cpp)
 
 set(RTL_SOURCES
-    ../../testbench/l1ca_code_tb.sv
-    ../../src/l1ca_code.sv
+    ../../testbench/gps/l1ca_code_tb.sv
+    ../../src/gps/l1ca_code.sv
 )
 
 # Add the Verilated circuit to the target
