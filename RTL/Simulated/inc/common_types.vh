@@ -1,8 +1,8 @@
-`ifndef COMMON_GNSS_TYPES_VH
-`define COMMON_GNSS_TYPES_VH
+`ifndef COMMON_TYPES_VH
+`define COMMON_TYPES_VH
 
 // Common types package
-package common_gnss_types_pkg;
+package common_types_pkg;
 
     parameter SAMPLE_RATE = 19200000;           // Sample rate
     parameter IF_RATE = 4020000;                // GPS L1 C/A frequency
@@ -16,4 +16,4 @@ package common_gnss_types_pkg;
     typedef logic signed [ACC_W-1:0] acc_t;     // Accumulator type
 endpackage
 
-`endif // COMMON_GNSS_TYPES_VH
+`endif // COMMON_TYPES_VH

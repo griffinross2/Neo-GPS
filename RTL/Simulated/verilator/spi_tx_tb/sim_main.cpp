@@ -3,7 +3,7 @@
 #include <verilated_fst_c.h>
 
 // Include model header, generated from Verilating "top.v"
-#include "Vuart_tx.h"
+#include "Vspi_tx_tb.h"
 
 double sc_time_stamp()
 {
@@ -33,10 +33,10 @@ int main(int argc, char **argv)
     tfp->set_time_resolution("ns");
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vuart_tx *const top = new Vuart_tx{contextp};
+    Vspi_tx_tb *const top = new Vspi_tx_tb{contextp};
 
     top->trace(tfp, 99);
-    tfp->open("outputs/uart_tx/waveform.fst");
+    tfp->open("outputs/spi_tx_tb/waveform.fst");
 
     // Simulate until $finish
     while (!contextp->gotFinish())

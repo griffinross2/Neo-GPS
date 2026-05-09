@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 
-`include "common_gnss_types.vh"
-import common_gnss_types_pkg::*;
+`include "common_types.vh"
+import common_types_pkg::*;
 
 module l1ca_code_tb;
 
