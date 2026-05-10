@@ -73,12 +73,12 @@ always_comb begin
     case (cmd_bus_state)
         SD_CMD_BUS_IDLE: begin
             next_cmd_resp_bit_count = 8'd47;
+            next_cmd_tristate = 1'b1;
 
             if (cmd_start) begin
                 next_cmd_resp = '0;
                 next_cmd_resp[47:0] = cmd_in;
                 next_cmd_bus_state = SD_CMD_BUS_CMD;
-                next_cmd_tristate = 1'b0;
                 next_cmd_resp_valid = 1'b0;
                 next_resp_expected_reg = resp_expected;
                 next_resp_large_reg = resp_large;
@@ -86,11 +86,11 @@ always_comb begin
         end
         SD_CMD_BUS_CMD: begin
             // Send CMD MSB first
+            next_cmd_tristate = 1'b0;
             next_cmd_resp[47:0] = {cmd_resp[46:0], 1'b0};
             next_cmd_resp_bit_count = cmd_resp_bit_count - 8'd1;
 
             if (cmd_resp_bit_count == '0) begin
-                next_cmd_tristate = 1'b1;
                 if (resp_expected_reg) begin
                     next_cmd_bus_state = SD_CMD_BUS_WAIT_RESP;
                 end else begin
@@ -101,6 +101,7 @@ always_comb begin
         end
         SD_CMD_BUS_WAIT_RESP: begin
             // Wait for response start bit (0)
+            next_cmd_tristate = 1'b1;
             next_cmd_resp = '0;
             next_cmd_resp_bit_count = resp_large_reg ? 8'd134 : 8'd46;
 

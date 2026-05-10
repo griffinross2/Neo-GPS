@@ -1,17 +1,17 @@
 `timescale 1ns/1ns
 
 module spi_tx (
-    input  logic                  clk,          // Clock signal
-    input  logic                  nrst,         // Active low reset
-    input  logic [15:0]           bit_period,   // SPI clock divider
-    input  logic [4:0]            data_width,   // Data width (0-31)->(1 to 32 bits)
-    input  logic                  start,        // Start transmission signal
-    input  logic [31:0]           data,         // Data to transmit (up to 32 bits)
-    output logic                  sck,          // SPI clock
-    output logic                  sdo,          // Serial data out
-    output logic                  cs,           // Chip select (active low)
-    output logic                  busy,         // Busy signal
-    output logic                  done          // Transmission done signal
+    input  logic            clk,        // Clock signal
+    input  logic            nrst,       // Active low reset
+    input  logic [15:0]     bit_period, // SPI clock divider
+    input  logic [4:0]      data_width, // Data width (0-31)->(1 to 32 bits)
+    input  logic            start,      // Start transmission signal
+    input  logic [31:0]     data,       // Data to transmit (up to 32 bits)
+    output logic            sck,        // SPI clock
+    output logic            sdo,        // Serial data out
+    output logic            cs,         // Chip select (active low)
+    output logic            busy,       // Busy signal
+    output logic            done        // Transmission done signal
 );
 
     // States
