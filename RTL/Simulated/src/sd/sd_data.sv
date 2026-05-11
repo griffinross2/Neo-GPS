@@ -5,12 +5,8 @@ module sd_data (
     input  logic            nrst,           // Active low reset
     input  logic [3:0]      data_in,        // Nibble of data to send
     input  logic            data_start,     // Start data transmission
-    input  logic [15:0]     dat0_crc,       // CRC for DAT0
-    input  logic [15:0]     dat1_crc,       // CRC for DAT1
-    input  logic [15:0]     dat2_crc,       // CRC for DAT2
-    input  logic [15:0]     dat3_crc,       // CRC for DAT3
     inout  wire [3:0]       dat,            // DAT0-3
-    output logic            data_next,      // Indicate ready for the next nibble
+    output logic            data_next       // Indicate ready for the next nibble
 );
 
 logic [3:0] dat_output, dat_reg;
@@ -46,7 +42,7 @@ sd_crc sd_crc_inst (
     .crc_out({dat3_crc, dat2_crc, dat1_crc, dat0_crc})
 );
 
-always_ff @(posedge clk) begin
+always_ff @(posedge clk, negedge nrst) begin
     if (~nrst) begin
         dat_bus_state <= SD_DAT_BUS_IDLE;
         data_count <= 7'd127;
@@ -56,13 +52,13 @@ always_ff @(posedge clk) begin
     end
 end
 
-always_ff @(negedge clk) begin
+always_ff @(negedge clk, negedge nrst) begin
     if (~nrst) begin
-        dat_reg <= 1'b1;
-        dat_tristate <= 1'b1;
+        dat_reg <= '1;
+        dat_tristate <= '1;
     end else begin
-        data_reg <= dat_output;
-        data_tristate <= next_dat_tristate;
+        dat_reg <= dat_output;
+        dat_tristate <= next_dat_tristate;
     end
 end
 
@@ -118,7 +114,7 @@ always_comb begin
             next_dat_bus_state = SD_DAT_BUS_CRC_STATUS_WAIT;
         end
         SD_DAT_BUS_CRC_STATUS_WAIT: begin
-            dat_tristate = 1'b1;
+            next_dat_tristate = 1'b1;
             if (dat[0] == 1'b0) begin
                 next_dat_bus_state = SD_DAT_BUS_CRC_STATUS;
                 next_data_count = 7'd3;
@@ -135,6 +131,9 @@ always_comb begin
             if (dat[0] == 1'b1) begin
                 next_dat_bus_state = SD_DAT_BUS_IDLE;
             end
+        end
+        default: begin
+            next_dat_bus_state = SD_DAT_BUS_IDLE;
         end
     endcase
 end

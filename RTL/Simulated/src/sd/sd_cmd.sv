@@ -31,7 +31,7 @@ logic [135:0] next_cmd_resp;
 logic [7:0] cmd_resp_bit_count, next_cmd_resp_bit_count;
 logic next_cmd_resp_valid;
 
-always_ff @(posedge clk) begin
+always_ff @(posedge clk, negedge nrst) begin
     if (~nrst) begin
         cmd_bus_state <= SD_CMD_BUS_IDLE;
         cmd_resp <= '0;
@@ -49,7 +49,7 @@ always_ff @(posedge clk) begin
     end
 end
 
-always_ff @(negedge clk) begin
+always_ff @(negedge clk, negedge nrst) begin
     if (~nrst) begin
         cmd_reg <= 1'b1;
         cmd_tristate <= 1'b1;

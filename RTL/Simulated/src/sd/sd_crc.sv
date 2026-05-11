@@ -12,8 +12,8 @@ module sd_crc (
 logic [15:0] next_crc_reg [0:3];
 logic next_in;
 
-always_ff @(posedge clk) begin
-    if (!nrst) begin
+always_ff @(posedge clk, negedge nrst) begin
+    if (~nrst) begin
         crc_out[0] <= '1;
         crc_out[1] <= '1;
         crc_out[2] <= '1;
@@ -27,6 +27,7 @@ always_ff @(posedge clk) begin
 end
 
 always_comb begin
+    next_in = 1'b0;
     for (int i = 0; i < 4; i++) begin
         if (clear) begin
             next_crc_reg[i] = '1;
