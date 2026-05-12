@@ -70,11 +70,13 @@ typedef enum logic [3:0] {
     SD_HOST_INIT,
     SD_HOST_CMD0,
     SD_HOST_CMD8,
-    SD_HOST_CMD55,
+    SD_HOST_CMD55_ACMD41,
     SD_HOST_ACMD41,
     SD_HOST_CMD2,
     SD_HOST_CMD3,
     SD_HOST_CMD7,
+    SD_HOST_CMD55_ACMD6,
+    SD_HOST_ACMD6,
     SD_HOST_TRANSFER,
     SD_HOST_CMD24
 } sd_host_state_t;
@@ -137,11 +139,11 @@ always_comb begin
             next_cmd_start = 1'b0;
             resp_expected = 1'b1;
             if (cmd_resp_valid & ~cmd_start) begin
-                next_host_state = SD_HOST_CMD55;
+                next_host_state = SD_HOST_CMD55_ACMD41;
                 next_cmd_start = 1'b1;
             end
         end
-        SD_HOST_CMD55: begin
+        SD_HOST_CMD55_ACMD41: begin
             cmd_to_send = {1'b1, 6'd55, 32'b0}; // CMD55
             next_cmd_start = 1'b0;
             resp_expected = 1'b1;
@@ -157,7 +159,7 @@ always_comb begin
             if (cmd_resp_valid & ~cmd_start) begin
                 next_cmd_start = 1'b1;
                 if (~cmd_response[39]) begin // Check if card is busy
-                    next_host_state = SD_HOST_CMD55;
+                    next_host_state = SD_HOST_CMD55_ACMD41;
                 end else begin
                     next_host_state = SD_HOST_CMD2;
                 end
@@ -186,6 +188,24 @@ always_comb begin
         end
         SD_HOST_CMD7: begin
             cmd_to_send = {1'b1, 6'd7, rca, 16'b0}; // CMD7 with RCA
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_CMD55_ACMD6;
+                next_cmd_start = 1'b1;
+            end
+        end
+        SD_HOST_CMD55_ACMD6: begin
+            cmd_to_send = {1'b1, 6'd55, rca, 16'b0}; // CMD55
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_ACMD6;
+                next_cmd_start = 1'b1;
+            end
+        end
+        SD_HOST_ACMD6: begin
+            cmd_to_send = {1'b1, 6'd6, 30'b0, 2'b10}; // ACMD6, set bus width to 4 bits
             next_cmd_start = 1'b0;
             resp_expected = 1'b1;
             if (cmd_resp_valid & ~cmd_start) begin
