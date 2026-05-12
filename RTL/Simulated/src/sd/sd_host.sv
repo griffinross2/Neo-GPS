@@ -10,7 +10,7 @@ module sd_host (
     output wire             sd_clk          // SD clock
 );
 
-logic [47:0] cmd_to_send;
+logic [38:0] cmd_to_send;
 logic [135:0] cmd_response;
 logic cmd_resp_valid;
 logic cmd_start, next_cmd_start;
@@ -80,18 +80,20 @@ typedef enum logic [3:0] {
 } sd_host_state_t;
 
 sd_host_state_t host_state, next_host_state;
-
 logic [6:0] reset_clock_count, next_reset_clock_count;
-
+logic [15:0] rca, next_rca;
+ 
 always_ff @(posedge sd_clk_reg, negedge nrst) begin
     if (~nrst) begin
         host_state <= SD_HOST_RESET_WAIT;
         reset_clock_count <= 7'd74;
         cmd_start <= 1'b0;
+        rca <= '0;
     end else begin
         host_state <= next_host_state;
         reset_clock_count <= next_reset_clock_count;
         cmd_start <= next_cmd_start;
+        rca <= next_rca;
     end
 end
 
@@ -106,6 +108,7 @@ always_comb begin
     resp_large = 1'b0;
     data_to_send = '0;
     data_start = 1'b0;
+    next_rca = rca;
 
     case (host_state)
         SD_HOST_RESET_WAIT: begin
@@ -121,25 +124,76 @@ always_comb begin
             end
         end
         SD_HOST_CMD0: begin
-            cmd_to_send = {1'b0, 1'b1, 6'd0, 32'b0, 7'h4A, 1'b1}; // CMD0 with CRC
+            cmd_to_send = {1'b1, 6'd0, 32'b0}; // CMD0
             next_cmd_start = 1'b0;
             resp_expected = 1'b0;
-            if (cmd_resp_valid) begin
+            if (cmd_resp_valid & ~cmd_start) begin
                 next_host_state = SD_HOST_CMD8;
                 next_cmd_start = 1'b1;
             end
         end
         SD_HOST_CMD8: begin
-            cmd_to_send = {1'b0, 1'b1, 6'd8, 20'b0, 4'b0001, 8'b10101010, 7'h43, 1'b1}; // CMD8 with CRC
+            cmd_to_send = {1'b1, 6'd8, 20'b0, 4'b0001, 8'b10101010}; // CMD8, 2.7-3.6V, check pattern
             next_cmd_start = 1'b0;
             resp_expected = 1'b1;
-            if (cmd_resp_valid) begin
-                next_host_state = SD_HOST_CMD8;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_CMD55;
                 next_cmd_start = 1'b1;
             end
         end
+        SD_HOST_CMD55: begin
+            cmd_to_send = {1'b1, 6'd55, 32'b0}; // CMD55
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_ACMD41;
+                next_cmd_start = 1'b1;
+            end
+        end
+        SD_HOST_ACMD41: begin
+            cmd_to_send = {1'b1, 6'd41, 1'b0, 1'b1, 1'b0, 1'b1, 3'b0, 1'b0, 24'hFF8000}; // ACMD41, HCS=1, XPC=1, S18R=0, Set all voltage window bits
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_cmd_start = 1'b1;
+                if (~cmd_response[39]) begin // Check if card is busy
+                    next_host_state = SD_HOST_CMD55;
+                end else begin
+                    next_host_state = SD_HOST_CMD2;
+                end
+            end
+        end
+        SD_HOST_CMD2: begin
+            cmd_to_send = {1'b1, 6'd2, 32'b0}; // CMD2
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            resp_large = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_CMD3;
+                next_cmd_start = 1'b1;
+            end
+        end
+        SD_HOST_CMD3: begin
+            cmd_to_send = {1'b1, 6'd3, 32'b0}; // CMD3
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_CMD7;
+                next_cmd_start = 1'b1;
+
+                next_rca = cmd_response[39:24];
+            end
+        end
+        SD_HOST_CMD7: begin
+            cmd_to_send = {1'b1, 6'd7, rca, 16'b0}; // CMD7 with RCA
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_TRANSFER;
+            end
+        end
         default: begin
-            next_host_state = SD_HOST_INIT;
+            next_host_state = host_state;
         end
     endcase
 end

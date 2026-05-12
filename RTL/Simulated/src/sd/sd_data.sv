@@ -33,7 +33,7 @@ logic [15:0] dat2_crc;
 logic [15:0] dat3_crc;
 logic crc_clear, crc_enable;
 
-sd_crc sd_crc_inst (
+sd_crc16 sd_crc_inst (
     .clk(clk),
     .nrst(nrst),
     .data_in(data_in),

@@ -11,9 +11,7 @@ def calc_crc7(data: np.ndarray):
 
 arr = [1]
 arr += [0]*38
-arr[1:7] = [0, 0, 1, 0, 0, 0]
-arr[27:31] = [0, 0, 0, 1]
-arr[31:39] = [1, 0, 1, 0, 1, 0, 1, 0]
+arr[1:7] = [1, 1, 0, 1, 1, 1]
 arr = np.array(arr, dtype=np.uint8)
 # arr = arr[::-1]
 

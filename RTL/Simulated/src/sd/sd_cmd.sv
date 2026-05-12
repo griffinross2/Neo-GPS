@@ -3,7 +3,7 @@
 module sd_cmd (
     input  logic            clk,            // Clock signal
     input  logic            nrst,           // Active low reset
-    input  logic [47:0]     cmd_in,         // Command to send (48 bits)
+    input  logic [38:0]     cmd_in,         // Command to send (39 bits, 48 - 1 start - 7 CRC - 1 end)
     input  logic            cmd_start,      // Start command transmission
     input  logic            resp_expected,  // 1 if there will be a response to this command
     input  logic            resp_large,     // 1 if response is R2 (136 bits)  
@@ -30,6 +30,17 @@ logic resp_large_reg, next_resp_large_reg;
 logic [135:0] next_cmd_resp;
 logic [7:0] cmd_resp_bit_count, next_cmd_resp_bit_count;
 logic next_cmd_resp_valid;
+logic crc_clear, crc_enable;
+logic [6:0] cmd_crc;
+
+sd_crc7 sd_crc7_inst (
+    .clk(clk),
+    .nrst(nrst),
+    .cmd_in(cmd_output),
+    .clear(crc_clear),
+    .enable(crc_enable),
+    .crc_out(cmd_crc)
+);
 
 always_ff @(posedge clk, negedge nrst) begin
     if (~nrst) begin
@@ -69,6 +80,8 @@ always_comb begin
     next_resp_expected_reg = resp_expected_reg;
     next_resp_large_reg = resp_large_reg;
     cmd_output = cmd_resp[47];
+    crc_clear = 1'b0;
+    crc_enable = 1'b0;
 
     case (cmd_bus_state)
         SD_CMD_BUS_IDLE: begin
@@ -76,8 +89,9 @@ always_comb begin
             next_cmd_tristate = 1'b1;
 
             if (cmd_start) begin
+                crc_clear = 1'b1;
                 next_cmd_resp = '0;
-                next_cmd_resp[47:0] = cmd_in;
+                next_cmd_resp[46:8] = cmd_in;
                 next_cmd_bus_state = SD_CMD_BUS_CMD;
                 next_cmd_resp_valid = 1'b0;
                 next_resp_expected_reg = resp_expected;
@@ -89,6 +103,16 @@ always_comb begin
             next_cmd_tristate = 1'b0;
             next_cmd_resp[47:0] = {cmd_resp[46:0], 1'b0};
             next_cmd_resp_bit_count = cmd_resp_bit_count - 8'd1;
+            
+            if (cmd_resp_bit_count != 8'd47 && cmd_resp_bit_count > 8'd7) begin
+                crc_enable = 1'b1;
+            end else if (|cmd_resp_bit_count) begin
+                /* verilator lint_off WIDTHTRUNC */
+                cmd_output = cmd_crc[cmd_resp_bit_count - 8'd1];
+                /* verilator lint_on WIDTHTRUNC */
+            end else begin
+                cmd_output = 1'b1; // End bit
+            end
 
             if (cmd_resp_bit_count == '0) begin
                 if (resp_expected_reg) begin
