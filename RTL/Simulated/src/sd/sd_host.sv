@@ -4,7 +4,7 @@ module sd_host (
     input  logic            clk,            // Clock signal
     input  logic            nrst,           // Active low reset
     input  logic            init,           // Initialize the SD card
-    input  logic            start,          // Start recording
+    input  logic            record,         // Start recording
     inout  wire             cmd,            // CMD
     inout  wire [3:0]       dat,            // DAT0-3
     output wire             sd_clk          // SD clock
@@ -32,6 +32,7 @@ sd_cmd sd_cmd_inst (
 logic [3:0] data_to_send;
 logic data_start;
 logic data_next;
+logic data_done;
 
 sd_data sd_data_inst (
     .clk(sd_clk),
@@ -39,7 +40,8 @@ sd_data sd_data_inst (
     .data_in(data_to_send),
     .data_start(data_start),
     .dat(dat),
-    .data_next(data_next)
+    .data_next(data_next),
+    .data_done(data_done)
 );
 
 localparam logic [7:0] CLK_DIV_INIT = 8'd62;
@@ -78,7 +80,8 @@ typedef enum logic [3:0] {
     SD_HOST_CMD55_ACMD6,
     SD_HOST_ACMD6,
     SD_HOST_TRANSFER,
-    SD_HOST_CMD24
+    SD_HOST_CMD24,
+    SD_HOST_CMD24_DATA
 } sd_host_state_t;
 
 sd_host_state_t host_state, next_host_state;
@@ -209,6 +212,28 @@ always_comb begin
             next_cmd_start = 1'b0;
             resp_expected = 1'b1;
             if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_TRANSFER;
+            end
+        end
+        SD_HOST_TRANSFER: begin
+            if (record) begin
+                next_cmd_start = 1'b1;
+                next_host_state = SD_HOST_CMD24;
+            end
+        end
+        SD_HOST_CMD24: begin
+            cmd_to_send = {1'b1, 6'd24, 32'h0000_0000}; // CMD24, write block to address 0
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_resp_valid & ~cmd_start) begin
+                next_host_state = SD_HOST_CMD24_DATA;
+            end
+        end
+        SD_HOST_CMD24_DATA: begin
+            data_to_send = 4'b1010; // Example data pattern
+            data_start = 1'b1;
+            if (data_done) begin
+                data_start = 1'b0;
                 next_host_state = SD_HOST_TRANSFER;
             end
         end

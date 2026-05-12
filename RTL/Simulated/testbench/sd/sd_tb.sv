@@ -20,7 +20,7 @@ sd_host sd_host_inst (
     .clk(clk),          // Clock signal
     .nrst(nrst),        // Active low reset
     .init(1'b1),        // Initialize the SD card
-    .start(1'b0),       // Start recording
+    .record(1'b1),      // Start recording
     .cmd(cmd),          // CMD
     .dat(dat),          // DAT0-3
     .sd_clk(sd_clk)     // SD clock
@@ -82,86 +82,9 @@ initial begin
     #5000;
     nrst = 1;
 
-    #20000000;
+    #30000000;
 
     $finish;
 end
 
-
 endmodule
-
-// program test (
-//     input logic clk,
-//     input logic [135:0] cmd_resp,
-//     input logic cmd_resp_valid,
-//     output logic cmd_tristate,
-//     output logic [47:0] cmd_in,
-//     output logic cmd_start,
-//     output logic resp_expected,
-//     output logic resp_large,
-//     output logic cmd_out,
-//     output logic nrst
-// );
-
-//     task reset_dut();
-//         cmd_in = 48'h1234_5678_9ABC;
-//         cmd_start = 0;
-//         resp_large = 0;
-//         resp_expected = 0;
-//         cmd_out = 0;
-//         cmd_tristate = 1;
-
-//         nrst = 0;
-//         @(negedge clk);
-//         @(negedge clk);
-//         nrst = 1;
-
-//         @(negedge clk);
-//         @(negedge clk);
-//     endtask
-
-//     task send_command(input logic [47:0] cmd_in_val, input logic resp_expected_val, input logic resp_large_val);
-//         integer i;
-//         logic[135:0] resp;
-
-//         cmd_in = cmd_in_val;
-//         resp_expected = resp_expected_val;
-//         resp_large = resp_large_val;
-        
-//         // Start command
-//         cmd_start = 1;
-//         @(negedge clk);
-//         cmd_start = 0;
-
-//         // Wait for command to send
-//         for (i = 0; i < 52; i++) begin
-//             @(negedge clk);
-//         end
-
-//         if (resp_expected_val) begin
-//             // Send a response
-//             cmd_tristate = 0;
-//             for (i = 0; i < 48; i++) begin
-//                 resp = (136'h7ABC_DEF1_234F >> (47 - i)) & 136'b1;
-//                 cmd_out = resp[0];
-//                 @(negedge clk);
-//             end
-//             cmd_tristate = 1;
-//             cmd_out = 0;
-
-//             wait(cmd_resp_valid);
-//             @(negedge clk);
-//             $display("Received response: %h", cmd_resp);
-//         end
-//     endtask
-
-//     initial begin
-//         reset_dut();
-
-//         send_command(48'h1234_5678_9ABC, 1, 0); // Send command with expected response
-
-//         send_command(48'hABCD_EF12_3456, 0, 0); // Send command with no expected response
-
-//         $finish;
-//     end
-// endprogram

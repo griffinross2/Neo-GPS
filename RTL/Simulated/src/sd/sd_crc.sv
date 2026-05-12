@@ -14,10 +14,10 @@ logic next_in;
 
 always_ff @(posedge clk, negedge nrst) begin
     if (~nrst) begin
-        crc_out[0] <= '1;
-        crc_out[1] <= '1;
-        crc_out[2] <= '1;
-        crc_out[3] <= '1;
+        crc_out[0] <= '0;
+        crc_out[1] <= '0;
+        crc_out[2] <= '0;
+        crc_out[3] <= '0;
     end else begin
         crc_out[0] <= next_crc_reg[0];
         crc_out[1] <= next_crc_reg[1];
@@ -30,7 +30,7 @@ always_comb begin
     next_in = 1'b0;
     for (int i = 0; i < 4; i++) begin
         if (clear) begin
-            next_crc_reg[i] = '1;
+            next_crc_reg[i] = '0;
         end else if (enable) begin
             next_in = data_in[i] ^ crc_out[i][15];
             next_crc_reg[i] = {crc_out[i][14:0], 1'b0} ^ (next_in ? 16'h1021 : 16'h0000);

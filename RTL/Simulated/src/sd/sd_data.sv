@@ -6,7 +6,8 @@ module sd_data (
     input  logic [3:0]      data_in,        // Nibble of data to send
     input  logic            data_start,     // Start data transmission
     inout  wire [3:0]       dat,            // DAT0-3
-    output logic            data_next       // Indicate ready for the next nibble
+    output logic            data_next,      // Indicate ready for the next nibble
+    output logic            data_done       // Indicate data transfer is complete
 );
 
 logic [3:0] dat_output, dat_reg;
@@ -26,12 +27,13 @@ typedef enum logic [2:0] {
 
 sd_dat_bus_state_t dat_bus_state, next_dat_bus_state;
 
-logic [6:0] data_count, next_data_count;
+logic [9:0] data_count, next_data_count;
 logic [15:0] dat0_crc;
 logic [15:0] dat1_crc;
 logic [15:0] dat2_crc;
 logic [15:0] dat3_crc;
 logic crc_clear, crc_enable;
+logic next_data_done;
 
 sd_crc16 sd_crc_inst (
     .clk(clk),
@@ -39,16 +41,18 @@ sd_crc16 sd_crc_inst (
     .data_in(data_in),
     .clear(crc_clear),
     .enable(crc_enable),
-    .crc_out({dat3_crc, dat2_crc, dat1_crc, dat0_crc})
+    .crc_out({dat0_crc, dat1_crc, dat2_crc, dat3_crc})
 );
 
 always_ff @(posedge clk, negedge nrst) begin
     if (~nrst) begin
         dat_bus_state <= SD_DAT_BUS_IDLE;
-        data_count <= 7'd127;
+        data_count <= 10'd1023;
+        data_done <= 1'b0;
     end else begin
         dat_bus_state <= next_dat_bus_state;
         data_count <= next_data_count;
+        data_done <= next_data_done;
     end
 end
 
@@ -71,15 +75,16 @@ always_comb begin
     data_next = 1'b0;
     crc_clear = 1'b0;
     crc_enable = 1'b0;
+    next_data_done = data_done;
 
     case (dat_bus_state)
         SD_DAT_BUS_IDLE: begin
             next_dat_tristate = 1'b1;
-            next_data_count = 7'd127;
+            next_data_count = 10'd1023;
+            next_data_done = 1'b0;
             if (data_start) begin
                 crc_clear = 1'b1;
                 next_dat_bus_state = SD_DAT_BUS_DAT_START;
-                next_dat_tristate = 1'b0;
             end
         end
         SD_DAT_BUS_DAT_START: begin
@@ -92,10 +97,10 @@ always_comb begin
             data_next = 1'b1;
             crc_enable = 1'b1;
             if (data_count == '0) begin
-                next_data_count = 7'd15;
+                next_data_count = 10'd15;
                 next_dat_bus_state = SD_DAT_BUS_CRC;
             end else begin
-                next_data_count = data_count - 7'd1;
+                next_data_count = data_count - 10'd1;
             end
         end
         SD_DAT_BUS_CRC: begin
@@ -106,7 +111,7 @@ always_comb begin
             if (data_count == '0) begin
                 next_dat_bus_state = SD_DAT_BUS_CRC_END;
             end else begin
-                next_data_count = data_count - 7'd1;
+                next_data_count = data_count - 10'd1;
             end
         end
         SD_DAT_BUS_CRC_END: begin
@@ -117,18 +122,19 @@ always_comb begin
             next_dat_tristate = 1'b1;
             if (dat[0] == 1'b0) begin
                 next_dat_bus_state = SD_DAT_BUS_CRC_STATUS;
-                next_data_count = 7'd3;
+                next_data_count = 10'd3;
             end
         end
         SD_DAT_BUS_CRC_STATUS: begin
             if (data_count == '0) begin
                 next_dat_bus_state = SD_DAT_BUS_WAIT_BUSY;
             end else begin
-                next_data_count = data_count - 7'd1;
+                next_data_count = data_count - 10'd1;
             end
         end
         SD_DAT_BUS_WAIT_BUSY: begin
             if (dat[0] == 1'b1) begin
+                next_data_done = 1'b1;
                 next_dat_bus_state = SD_DAT_BUS_IDLE;
             end
         end
