@@ -3,27 +3,24 @@
 module sd_tb (
 );
 
-logic clk;
+logic clk, gnss_clk;
 logic nrst;
-logic [47:0] cmd_in;
-logic cmd_start;
-logic resp_expected;
-logic resp_large;
-logic [135:0] cmd_resp;
-logic cmd_resp_valid;
-
+logic [3:0] sample_bits;
+logic record;
 wire cmd;
 wire [3:0] dat;
 wire sd_clk;
 
 sd_host sd_host_inst (
-    .clk(clk),          // Clock signal
-    .nrst(nrst),        // Active low reset
-    .init(1'b1),        // Initialize the SD card
-    .record(1'b1),      // Start recording
-    .cmd(cmd),          // CMD
-    .dat(dat),          // DAT0-3
-    .sd_clk(sd_clk)     // SD clock
+    .clk(clk),                      // Clock signal
+    .nrst(nrst),                    // Active low reset
+    .gnss_clk(gnss_clk),            // GPS sample clock
+    .sample_bits(sample_bits),      // Sample bits from the GPS receiver
+    .init(1'b1),                    // Initialize the SD card
+    .record(record),                // Start recording
+    .cmd(cmd),                      // CMD
+    .dat(dat),                      // DAT0-3
+    .sd_clk(sd_clk)                 // SD clock
 );
 
 // test PROG (
@@ -40,8 +37,8 @@ sd_host sd_host_inst (
 // );
 
 initial begin
-    clk = 0;
-    forever #20 clk = ~clk;
+    gnss_clk = 0;
+    forever #26.041667 gnss_clk = ~gnss_clk; // 19.2 MHz
 end
 
 logic clk_50, clk_100, clk_200;
@@ -66,23 +63,35 @@ pullup(dat[3]);
 
 initial begin
     clk_50 = 0;
-    clk_100 = 0;
-    clk_200 = 0;
-    forever begin
-        #10 clk_50 = ~clk_50;       // 50 MHz
-        #5 clk_100 = ~clk_100;      // 100 MHz
-        #2.5 clk_200 = ~clk_200;    // 200 MHz
-    end
+    forever #10 clk_50 = ~clk_50;       // 50 MHz
 end
 
 initial begin
+    clk_100 = 0;
+    forever #5 clk_100 = ~clk_100;      // 100 MHz
+end
+
+initial begin
+    clk_200 = 0;
+    forever #2.5 clk_200 = ~clk_200;    // 200 MHz
+end
+
+assign clk = clk_100;
+
+initial begin
+    sample_bits = 4'b1010;
+    record = 1'b0;
     nrst = 1;
     #1;
     nrst = 0;
     #5000;
     nrst = 1;
 
-    #30000000;
+    #20000000;
+
+    record = 1'b1;
+
+    #10000000;
 
     $finish;
 end

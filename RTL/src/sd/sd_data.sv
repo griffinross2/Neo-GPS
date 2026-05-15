@@ -41,7 +41,10 @@ sd_crc16 sd_crc_inst (
     .data_in(data_in),
     .clear(crc_clear),
     .enable(crc_enable),
-    .crc_out({dat0_crc, dat1_crc, dat2_crc, dat3_crc})
+    .crc_out0(dat0_crc),
+    .crc_out1(dat1_crc),
+    .crc_out2(dat2_crc),
+    .crc_out3(dat3_crc)
 );
 
 always_ff @(posedge clk, negedge nrst) begin
@@ -91,16 +94,17 @@ always_comb begin
             dat_output = '0;
             next_dat_tristate = 1'b0;
             next_dat_bus_state = SD_DAT_BUS_DAT;
+            data_next = 1'b1;
         end
         SD_DAT_BUS_DAT: begin
             dat_output = data_in;
-            data_next = 1'b1;
             crc_enable = 1'b1;
             if (data_count == '0) begin
                 next_data_count = 10'd15;
                 next_dat_bus_state = SD_DAT_BUS_CRC;
             end else begin
                 next_data_count = data_count - 10'd1;
+                data_next = 1'b1;
             end
         end
         SD_DAT_BUS_CRC: begin
