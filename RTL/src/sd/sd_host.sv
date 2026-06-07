@@ -80,7 +80,7 @@ logic [1:0] fifo_block_ready_sync;
 logic fifo_block_started, next_fifo_block_started;
 logic [1:0] fifo_block_started_sync;
 
-simple_dual_two_clocks fifo_inst (
+dpram fifo_inst (
     .clka(gnss_clk),
     .clkb(sd_clk),
     .ena(1'b1),

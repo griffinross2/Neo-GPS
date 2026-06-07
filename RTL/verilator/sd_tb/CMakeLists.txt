@@ -3,7 +3,7 @@ add_executable(sd_tb sim_main.cpp)
 
 set(RTL_SOURCES
     ../../testbench/sd/sd_tb.sv
-    ../../src/memory/simple_dual_two_clocks.v
+    ../../src/memory/dpram.v
     ../../src/sd/sd_cmd.sv
     ../../src/sd/sd_data.sv
     ../../src/sd/sd_crc.sv
