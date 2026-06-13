@@ -18,7 +18,7 @@ module sd_host #(
     output  logic           fifo_overrun    // Indicate that the FIFO was not written to the SD card fast enough
 );
 
-typedef enum logic [3:0] {
+typedef enum logic [4:0] {
     SD_HOST_RESET_WAIT,
     SD_HOST_INIT,
     SD_HOST_CMD0,
@@ -31,6 +31,8 @@ typedef enum logic [3:0] {
     SD_HOST_CMD55_ACMD6,
     SD_HOST_ACMD6,
     SD_HOST_TRANSFER,
+    SD_HOST_CMD55_ACMD23,
+    SD_HOST_ACMD23,
     SD_HOST_CMD25,
     SD_HOST_CMD25_DATA,
     SD_HOST_CMD12
@@ -312,12 +314,30 @@ always_comb begin
         SD_HOST_TRANSFER: begin
             if (&fifo_block_ready_sync) begin
                 next_cmd_start = 1'b1;
-                next_host_state = SD_HOST_CMD25;
+                next_host_state = SD_HOST_CMD55_ACMD23;
                 next_fifo_block_started = 1'b1;
             end
         end
-        SD_HOST_CMD25: begin
+        SD_HOST_CMD55_ACMD23: begin
             next_fifo_block_started = 1'b1;
+            cmd_to_send = {1'b1, 6'd55, rca, 16'b0}; // CMD55
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_interval_countdown == 3'd0) begin
+                next_host_state = SD_HOST_ACMD23;
+                next_cmd_start = 1'b1;
+            end
+        end
+        SD_HOST_ACMD23: begin
+            cmd_to_send = {1'b1, 6'd23, 9'b0, 23'd256}; // ACMD23, pre-erase 256 blocks
+            next_cmd_start = 1'b0;
+            resp_expected = 1'b1;
+            if (cmd_interval_countdown == 3'd0) begin
+                next_host_state = SD_HOST_CMD25;
+                next_cmd_start = 1'b1;
+            end
+        end
+        SD_HOST_CMD25: begin
             cmd_to_send = {1'b1, 6'd25, data_block_addr}; // CMD25
             next_cmd_start = 1'b0;
             resp_expected = 1'b1;
