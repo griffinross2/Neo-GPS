@@ -73,11 +73,23 @@ wire [31:0] ext_read_addr;
 wire        ext_read_stop;
 
 wire        ext_write_act;
-wire        ext_write_done;
+reg         ext_write_done;
 wire [31:0] ext_write_addr;
 
 assign ext_read_go = 1'b0;
-assign ext_write_done = 1'b0;
+always @(posedge clk_50, negedge reset_n) begin
+   if (~reset_n) begin
+      ext_write_done <= 1;
+   end
+   else begin
+      if (ext_write_act & ext_write_done) begin
+         ext_write_done <= 0;
+      end
+      else begin
+         ext_write_done <= 1;
+      end
+   end
+end
 
 wire         bram_rd_sd_clk;
 wire [6:0]   bram_rd_sd_addr;

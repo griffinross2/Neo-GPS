@@ -1,6 +1,6 @@
 `timescale 1ns/1ns
 
-module sd_top (
+module sd_top_test (
     input CLK, ck_rst,
     output LED [0:3],
     input BTN[0:3],
@@ -19,8 +19,6 @@ module sd_top (
     wire nrst;
     wire cd;
     wire sd_clk;
-    logic crc_error;
-    logic fifo_overrun;
 
     assign dat = {ja_1, ja_4, ja_3, ja_7};
     assign cmd = ja_6;
@@ -29,13 +27,19 @@ module sd_top (
     assign sd_clk = ja_2;
 
     wire i0, i1, q0, q1;
+    logic test_i0, test_i1, test_q0, test_q1;
+    assign test_i0 = 1'b0;
+    assign test_q0 = 1'b0;
+    assign test_q1 = 1'b0;
+    logic [4:0] test_pattern_counter;
+    localparam logic [31:0] I1_TEST_PATTERN = 32'h278937C5;
     wire gnss_clk;
     wire cs, dout, sck;
     assign gnss_clk = jb_6;
-    assign i0 = jb_2;
-    assign i1 = jb_3;
-    assign q0 = jb_0;
-    assign q1 = jb_1;
+    assign i0 = test_i0;
+    assign i1 = test_i1;
+    assign q0 = test_q0;
+    assign q1 = test_q1;
     assign jb_4 = dout;
     assign jb_5 = sck;
     assign jb_7 = cs;
@@ -47,18 +51,21 @@ module sd_top (
     always_ff @(posedge gnss_clk, negedge nrst) begin
         if (~nrst) begin
             record_button_sync <= 3'b000;
-            record <= 1'b0;
+            record = 1'b0;
+            test_pattern_counter <= '0;
         end else begin
             record_button_sync <= {record_button_sync[1:0], BTN[0]};
             if (&record_button_sync) begin
                 record <= 1'b1;
             end
+            if (record) begin
+                test_i1 <= I1_TEST_PATTERN[test_pattern_counter];
+                test_pattern_counter <= test_pattern_counter + 1;
+            end
         end
     end
     assign LED[0] = record;
-    assign LED[1] = crc_error;
-    assign LED[2] = fifo_overrun;
-
+    
     sd_host #(
         .CLK_DIV_INIT(CLK_DIV_INIT),
         .CLK_DIV(CLK_DIV)
@@ -71,9 +78,7 @@ module sd_top (
         .record(record),                // Start recording
         .cmd(cmd),                      // CMD
         .dat(dat),                      // DAT0-3
-        .sd_clk(sd_clk),                // SD clock
-        .crc_error(crc_error),          // CRC error output
-        .fifo_overrun(fifo_overrun)     // FIFO overrun output
+        .sd_clk(sd_clk)                 // SD clock
     );
 
 endmodule

@@ -10,6 +10,8 @@ logic record;
 wire cmd;
 wire [3:0] dat;
 wire sd_clk;
+logic crc_error;
+logic fifo_overrun;
 
 sd_host sd_host_inst (
     .clk(clk),                      // Clock signal
@@ -20,7 +22,9 @@ sd_host sd_host_inst (
     .record(record),                // Start recording
     .cmd(cmd),                      // CMD
     .dat(dat),                      // DAT0-3
-    .sd_clk(sd_clk)                 // SD clock
+    .sd_clk(sd_clk),                // SD clock
+    .crc_error(crc_error),          // CRC error output
+    .fifo_overrun(fifo_overrun)     // FIFO overrun output
 );
 
 // test PROG (
@@ -38,7 +42,20 @@ sd_host sd_host_inst (
 
 initial begin
     gnss_clk = 0;
-    forever #26.041667 gnss_clk = ~gnss_clk; // 19.2 MHz
+    sample_bits = '0;
+    forever #26.041667 begin
+        gnss_clk = ~gnss_clk; // 19.2 MHz
+    end
+end
+
+integer randnum;
+always_ff @(posedge gnss_clk, negedge nrst) begin
+    if (~nrst) begin
+        sample_bits <= '0;
+    end else begin
+        randnum = $random();
+        sample_bits <= randnum[3:0];
+    end
 end
 
 logic clk_50, clk_100, clk_200;
@@ -79,7 +96,6 @@ end
 assign clk = clk_100;
 
 initial begin
-    sample_bits = 4'b1010;
     record = 1'b0;
     nrst = 1;
     #1;
@@ -87,11 +103,11 @@ initial begin
     #5000;
     nrst = 1;
 
-    #20000000;
+    #5000000;
 
     record = 1'b1;
 
-    #10000000;
+    #200000000;
 
     $finish;
 end

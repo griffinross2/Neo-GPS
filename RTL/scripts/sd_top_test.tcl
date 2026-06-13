@@ -31,13 +31,13 @@
 
     add_files -fileset sources_1 [ glob ../src/memory/dpram.v ]
     add_files -fileset sources_1 [ glob ../src/sd/*.sv ]
-    add_files -fileset sources_1 [ glob ../top/sd_top.sv ]
+    add_files -fileset sources_1 [ glob ../top/sd_top_test.sv ]
 
     set_property include_dirs ../inc [current_fileset]
 
     check_syntax -fileset sources_1
 
-    set_property top sd_top [get_fileset sources_1]
+    set_property top sd_top_test [get_fileset sources_1]
     update_compile_order -fileset sources_1
 
     # synth_design

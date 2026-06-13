@@ -7,7 +7,8 @@ module sd_data (
     input  logic            data_start,     // Start data transmission
     inout  wire [3:0]       dat,            // DAT0-3
     output logic            data_next,      // Indicate ready for the next nibble
-    output logic            data_done       // Indicate data transfer is complete
+    output logic            data_done,      // Indicate data transfer is complete
+    output logic            crc_error       // Indicate CRC error in received data
 );
 
 logic [3:0] dat_output, dat_reg;
@@ -34,6 +35,8 @@ logic [15:0] dat2_crc;
 logic [15:0] dat3_crc;
 logic crc_clear, crc_enable;
 logic next_data_done;
+logic [2:0] crc_status_sr;
+logic next_crc_error;
 
 sd_crc16 sd_crc_inst (
     .clk(clk),
@@ -52,10 +55,14 @@ always_ff @(posedge clk, negedge nrst) begin
         dat_bus_state <= SD_DAT_BUS_IDLE;
         data_count <= 10'd1023;
         data_done <= 1'b0;
+        crc_status_sr <= '0;
+        crc_error <= 1'b0;
     end else begin
         dat_bus_state <= next_dat_bus_state;
         data_count <= next_data_count;
         data_done <= next_data_done;
+        crc_status_sr <= {crc_status_sr[1:0], dat[0]};
+        crc_error <= next_crc_error;
     end
 end
 
@@ -79,6 +86,7 @@ always_comb begin
     crc_clear = 1'b0;
     crc_enable = 1'b0;
     next_data_done = data_done;
+    next_crc_error = crc_error;
 
     case (dat_bus_state)
         SD_DAT_BUS_IDLE: begin
@@ -87,6 +95,7 @@ always_comb begin
             next_data_done = 1'b0;
             if (data_start) begin
                 crc_clear = 1'b1;
+                // next_crc_error = 1'b0;
                 next_dat_bus_state = SD_DAT_BUS_DAT_START;
             end
         end
@@ -132,6 +141,9 @@ always_comb begin
         SD_DAT_BUS_CRC_STATUS: begin
             if (data_count == '0) begin
                 next_dat_bus_state = SD_DAT_BUS_WAIT_BUSY;
+                if (crc_status_sr != 3'b010) begin
+                    next_crc_error = 1'b1;
+                end
             end else begin
                 next_data_count = data_count - 10'd1;
             end

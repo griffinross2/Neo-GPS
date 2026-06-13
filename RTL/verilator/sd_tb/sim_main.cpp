@@ -5,6 +5,8 @@
 // Include model header, generated from Verilating "top.v"
 #include "Vsd_tb.h"
 
+#include <iostream>
+
 double sc_time_stamp()
 {
     return 0;
@@ -47,6 +49,11 @@ int main(int argc, char **argv)
         top->eval();
 
         tfp->dump(contextp->time());
+
+        if (contextp->time() % 1000000 == 0)
+        {
+            std::cout << "Simulation time: " << (contextp->time() / 1000000) << " ms" << std::endl;
+        }
     }
 
     // Final model cleanup
