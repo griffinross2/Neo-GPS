@@ -53,7 +53,7 @@ int main()
         {
             power_str += "*";
         }
-        std::println("SV{}: code_phase={} chips, doppler={} Hz, power: {}", sv + 1, code_phase, doppler, power_str);
+        std::println("SV{:3}: code_phase={:10.3f} chips, doppler={:12.3f} Hz, power: {}", sv + 1, code_phase, doppler, power_str);
     }
 
     delete[] samples;

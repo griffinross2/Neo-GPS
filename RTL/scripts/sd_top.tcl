@@ -31,6 +31,7 @@
 
     add_files -fileset sources_1 [ glob ../src/memory/dpram.v ]
     add_files -fileset sources_1 [ glob ../src/sd/*.sv ]
+    add_files -fileset sources_1 [ glob ../src/frontend/frontend_config.sv ]
     add_files -fileset sources_1 [ glob ../top/sd_top.sv ]
 
     set_property include_dirs ../inc [current_fileset]

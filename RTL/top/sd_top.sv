@@ -39,8 +39,7 @@ module sd_top (
     assign jb_4 = dout;
     assign jb_5 = sck;
     assign jb_7 = cs;
-    assign {sck, dout, cs} = 3'b100;
-
+    // assign {sck, dout, cs} = 3'b100;
 
     logic [2:0] record_button_sync;
     logic record;
@@ -58,6 +57,31 @@ module sd_top (
     assign LED[0] = record;
     assign LED[1] = crc_error;
     assign LED[2] = fifo_overrun;
+
+    logic config_start;
+    logic config_busy;
+
+    always_ff @(posedge CLK, negedge nrst) begin
+        if (~nrst) begin
+            config_start <= 1'b1;
+        end else begin
+            if (config_busy) begin
+                config_start <= 1'b0;
+            end
+        end
+    end
+
+    assign LED[3] = config_busy;
+
+    frontend_config frontend_config_inst (
+        .clk(CLK),
+        .nrst(nrst),
+        .config_start(config_start),
+        .config_busy(config_busy),
+        .sclk(sck),
+        .cs(cs),
+        .sdata(dout)
+    );
 
     sd_host #(
         .CLK_DIV_INIT(CLK_DIV_INIT),
