@@ -1,4 +1,4 @@
-module dpram (clka,ena,wea,addra,dia,doa);
+module spram (clka,ena,wea,addra,dia,doa);
 
 parameter DATA_WIDTH = 4;
 parameter ADDR_WIDTH = 11;
