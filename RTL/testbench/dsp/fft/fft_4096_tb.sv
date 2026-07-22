@@ -7,6 +7,7 @@ logic clk, nrst;
 logic start;
 logic direction;
 logic scaling;
+logic data_ready;
 logic done;
 
 logic signed [15:0] x_re, x_im;
@@ -25,6 +26,7 @@ fft_4096 dut (
     .start(start),
     .direction(direction),
     .scaling(scaling),
+    .data_ready(data_ready),
     .done(done),
     .x_re(x_re),
     .x_im(x_im),
@@ -43,6 +45,7 @@ initial begin
     start = 0;
     direction = 0;
     scaling = 0;
+    data_ready = 1;
     x_re = 16'sd0;
     x_im = 16'sd0;
     
@@ -56,8 +59,11 @@ initial begin
     @(negedge clk);
     start = 0;
     for (int i = 0; i < 4096; i++) begin
+        data_ready = 1;
         x_re = test_inputs[i][31:16];
         x_im = test_inputs[i][15:0];
+        @(negedge clk);
+        data_ready = 0;
         @(negedge clk);
     end
 

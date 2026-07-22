@@ -4,6 +4,7 @@ module control_unit (
     input logic clk, nrst,
     
     input logic start,
+    input logic data_ready,
     output logic done,
     
     output logic [1:0] mem_wsrc,
@@ -79,13 +80,16 @@ always_comb begin
         LOAD: begin
             mem_addr = bit_reverse_addr;
             mem_wsrc = 2'd0;
-            mem_we = 1'b1;
 
-            next_addr_counter = addr_counter + 1;
-            if (&addr_counter) begin
-                next_span = 1;
-                next_addr_counter = '0;
-                next_state = BUTTERFLY_READ_0;
+            if (data_ready) begin
+                mem_we = 1'b1;
+                next_addr_counter = addr_counter + 1;
+
+                if (&addr_counter) begin
+                    next_span = 1;
+                    next_addr_counter = '0;
+                    next_state = BUTTERFLY_READ_0;
+                end
             end
         end
         BUTTERFLY_READ_0: begin
@@ -138,8 +142,8 @@ always_comb begin
             end
         end
         OUTPUT: begin
-            next_addr_counter = addr_counter + 1;
             mem_addr = addr_counter;
+            next_addr_counter = addr_counter + 1;
 
             if (&addr_counter) begin
                 next_state = IDLE;

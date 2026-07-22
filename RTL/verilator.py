@@ -3,13 +3,16 @@ import argparse
 import os
 import shutil
 
-def build(dir):
+def build(dir, release=False):
     if not os.path.exists('build'):
         os.mkdir('build')
 
     try:
         # Run the command
-        subprocess.run('cmake .. -G "MinGW Makefiles"', cwd='build', check=True)
+        if release:
+            subprocess.run(f'cmake -DCMAKE_BUILD_TYPE=Release .. -G "MinGW Makefiles"', cwd='build', check=True)
+        else:
+            subprocess.run(f'cmake .. -G "MinGW Makefiles"', cwd='build', check=True)
         subprocess.run(f'cmake --build . --target {dir}', cwd='build', check=True)
         print(f"Verilation successful.")
     except subprocess.CalledProcessError as e:
@@ -41,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument('--clean', action='store_true', help='Clean the verilator project')
     parser.add_argument('--rebuild', action='store_true', help='Clean and build the verilator project')
     parser.add_argument('--all', action='store_true', help='Build and run the verilator project')
+    parser.add_argument('--release', action='store_true', help='Build the verilator project in release mode')    
 
     args = parser.parse_args()
 
@@ -48,7 +52,7 @@ if __name__ == "__main__":
         parser.error('No action specified, add --build or --run')
         
     if args.build:
-        build(args.dir[0])
+        build(args.dir[0], release=args.release)
 
     if args.run:
         run(args.dir[0])
@@ -58,8 +62,8 @@ if __name__ == "__main__":
 
     if args.rebuild:
         clean(args.dir[0])
-        build(args.dir[0])
+        build(args.dir[0], release=args.release)
 
     if args.all:
-        build(args.dir[0])
+        build(args.dir[0], release=args.release)
         run(args.dir[0])

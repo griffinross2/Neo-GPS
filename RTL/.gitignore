@@ -2,3 +2,4 @@ build/
 outputs/
 vivado/
 *.hex
+*.bin

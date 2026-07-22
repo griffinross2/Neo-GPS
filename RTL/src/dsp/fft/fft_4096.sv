@@ -6,6 +6,7 @@ module fft_4096 (
     input logic start,
     input logic direction,  // 0: forward, 1: inverse
     input logic scaling,    // 0: scale 1-bit per stage, 1: no scaling
+    input logic data_ready,
     output logic done,
 
     input logic signed [15:0] x_re, x_im,
@@ -69,6 +70,7 @@ control_unit cu (
     .clk(clk),
     .nrst(nrst),
     .start(start),
+    .data_ready(data_ready),
     .done(done),
     .mem_wsrc(mem_wsrc),
     .mem_we(mem_we),

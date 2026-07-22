@@ -14,8 +14,7 @@
 `include "common_types.vh"
 import common_types_pkg::*;
 
-// Takes 0.224068832 s to complete
-module ac_pca_search (
+module l1ca_ac_pca_search (
     input logic clk, nrst,                      // Clock and reset
     input logic signal_in,                      // Input signal
     input logic start,                          // Start acquisition
@@ -48,52 +47,31 @@ typedef enum logic [1:0] {
 state_t state, next_state;
 fft_state_t fft_state, next_fft_state;
 
-logic [15:0] s_axis_config_tdata;
-logic s_axis_config_tvalid;
-logic s_axis_config_tready;
-logic [31:0] s_axis_data_tdata;
-logic s_axis_data_tvalid;
-logic s_axis_data_tready;
-logic s_axis_data_tlast;
-logic [31:0] m_axis_data_tdata;
-logic [15:0] m_axis_data_tuser;
-logic m_axis_data_tvalid;
-logic m_axis_data_tready;
-logic m_axis_data_tlast;
-logic event_frame_started;
-logic event_tlast_unexpected;
-logic event_tlast_missing;
-logic event_status_channel_halt;
-logic event_data_in_channel_halt;
-logic event_data_out_channel_halt;
+logic fft_start;
+logic fft_direction;
+logic fft_scaling;
+logic fft_ready;
+logic fft_done;
+logic [15:0] fft_x_re, fft_x_im;
+logic [15:0] fft_X_re, fft_X_im;
 
-xfft_0 fft_inst (
-    .aclk(clk),
-    .aresetn(nrst),
-    .s_axis_config_tdata(s_axis_config_tdata),
-    .s_axis_config_tvalid(s_axis_config_tvalid),
-    .s_axis_config_tready(s_axis_config_tready),
-    .s_axis_data_tdata(s_axis_data_tdata),
-    .s_axis_data_tvalid(s_axis_data_tvalid),
-    .s_axis_data_tready(s_axis_data_tready),
-    .s_axis_data_tlast(s_axis_data_tlast),
-    .m_axis_data_tdata(m_axis_data_tdata),
-    .m_axis_data_tuser(m_axis_data_tuser),
-    .m_axis_data_tvalid(m_axis_data_tvalid),
-    .m_axis_data_tready(m_axis_data_tready),
-    .m_axis_data_tlast(m_axis_data_tlast),
-    .event_frame_started(event_frame_started),
-    .event_tlast_unexpected(event_tlast_unexpected),
-    .event_tlast_missing(event_tlast_missing),
-    .event_status_channel_halt(event_status_channel_halt),
-    .event_data_in_channel_halt(event_data_in_channel_halt),
-    .event_data_out_channel_halt(event_data_out_channel_halt)
+fft_4096 fft_inst (
+    .clk(clk),
+    .nrst(nrst),
+    .start(fft_start),
+    .direction(fft_direction),
+    .scaling(fft_scaling),
+    .data_ready(fft_ready),
+    .done(fft_done),
+    .x_re(fft_x_re),
+    .x_im(fft_x_im),
+    .X_re(fft_X_re),
+    .X_im(fft_X_im)
 );
 
 logic [16:0] sample_addr, next_sample_addr;
 logic [11:0] sample_fft_addr, next_sample_fft_addr;
 logic [11:0] code_fft_addr, next_code_fft_addr;
-logic [11:0] sample_fft_addr_override;
 logic [11:0] code_fft_addr_override;
 logic signed [5:0] sample_i_avg, next_sample_i_avg, sample_i_avg_plus_sample;
 logic signed [5:0] sample_q_avg, next_sample_q_avg, sample_q_avg_plus_sample;
@@ -136,102 +114,63 @@ localparam LO_SIN = 4'b0011;
 localparam LO_COS = 4'b1001;
 
 // Sample memory
-xpm_memory_spram #(
-    .ADDR_WIDTH_A(17),
-    .MEMORY_SIZE(76800), // 4ms at 19200000 Hz
-    .WRITE_DATA_WIDTH_A(1),
-    .BYTE_WRITE_WIDTH_A(1),
-    .READ_DATA_WIDTH_A(1),
-    .READ_LATENCY_A(1),
-    .RST_MODE_A("ASYNC"),
-    .MEMORY_PRIMITIVE("block")
+spram #(
+    .ADDR_WIDTH(17),
+    .RAM_DEPTH(76800), // 4ms at 19200000 Hz
+    .DATA_WIDTH(1)
 ) sample_i (
     .clka(clk),
-    .rsta(~nrst),
     .ena(sample_wen | sample_ren),
     .wea(sample_wen),
     .addra(sample_addr),
-    .dina(sample_i_in),
-    .douta(sample_i_out),
-    .injectdbiterra(1'b0),
-    .injectsbiterra(1'b0),
-    .regcea(1'b1),
-    .sleep(1'b0)
+    .dia(sample_i_in),
+    .doa(sample_i_out)
 );
-xpm_memory_spram #(
-    .ADDR_WIDTH_A(17),
-    .MEMORY_SIZE(76800),
-    .WRITE_DATA_WIDTH_A(1),
-    .BYTE_WRITE_WIDTH_A(1),
-    .READ_DATA_WIDTH_A(1),
-    .READ_LATENCY_A(1),
-    .RST_MODE_A("ASYNC"),
-    .MEMORY_PRIMITIVE("block")
+spram #(
+    .ADDR_WIDTH(17),
+    .RAM_DEPTH(76800), // 4ms at 19200000 Hz
+    .DATA_WIDTH(1)
 ) sample_q (
     .clka(clk),
-    .rsta(~nrst),
     .ena(sample_wen | sample_ren),
     .wea(sample_wen),
     .addra(sample_addr),
-    .dina(sample_q_in),
-    .douta(sample_q_out),
-    .injectdbiterra(1'b0),
-    .injectsbiterra(1'b0),
-    .regcea(1'b1),
-    .sleep(1'b0)
+    .dia(sample_q_in),
+    .doa(sample_q_out)
 );
 
 // Sample FFT results
-xpm_memory_spram #(
-    .ADDR_WIDTH_A(12),
-    .MEMORY_SIZE(4096*32),
-    .WRITE_DATA_WIDTH_A(32),
-    .BYTE_WRITE_WIDTH_A(32),
-    .READ_DATA_WIDTH_A(32),
-    .READ_LATENCY_A(1),
-    .RST_MODE_A("ASYNC"),
-    .MEMORY_PRIMITIVE("block")
+spram #(
+    .ADDR_WIDTH(12),
+    .RAM_DEPTH(4096),
+    .DATA_WIDTH(32)
 ) sample_fft (
     .clka(clk),
-    .rsta(~nrst),
     .ena(sample_fft_wen | sample_fft_ren),
     .wea(sample_fft_wen),
-    .addra(sample_fft_addr_override),
-    .dina(m_axis_data_tdata),
-    .douta({sample_fft_q_out, sample_fft_i_out}),
-    .injectdbiterra(1'b0),
-    .injectsbiterra(1'b0),
-    .regcea(1'b1),
-    .sleep(1'b0)
+    .addra(sample_fft_addr),
+    .dia({fft_X_im, fft_X_re}),
+    .doa({sample_fft_q_out, sample_fft_i_out})
 );
 
 // Code FFT results
-xpm_memory_spram #(
-    .ADDR_WIDTH_A(12),
-    .MEMORY_SIZE(4096*32),
-    .WRITE_DATA_WIDTH_A(32),
-    .BYTE_WRITE_WIDTH_A(32),
-    .READ_DATA_WIDTH_A(32),
-    .READ_LATENCY_A(1),
-    .RST_MODE_A("ASYNC"),
-    .MEMORY_PRIMITIVE("block")
+spram #(
+    .ADDR_WIDTH(12),
+    .RAM_DEPTH(4096),
+    .DATA_WIDTH(32)
 ) code_fft (
     .clka(clk),
-    .rsta(~nrst),
     .ena(code_fft_wen | code_fft_ren),
     .wea(code_fft_wen),
-    .addra(code_fft_addr_override),
-    .dina(m_axis_data_tdata),
-    .douta({code_fft_q_out, code_fft_i_out}),
-    .injectdbiterra(1'b0),
-    .injectsbiterra(1'b0),
-    .regcea(1'b1),
-    .sleep(1'b0)
+    .addra(code_fft_addr),
+    .dia({fft_X_im, fft_X_re}),
+    .doa({code_fft_q_out, code_fft_i_out})
 );
 
 logic code_strobe;
 logic code_clear;
 logic code;
+logic epoch;
 logic [9:0] code_num;
 
 // Code generator
@@ -242,7 +181,8 @@ l1ca_code code_gen (
     .clear(code_clear),
     .sv(sv),
     .code(code),
-    .chip(code_num)
+    .chip(code_num),
+    .epoch(epoch)
 );
 
 always_ff @(posedge clk) begin
@@ -289,49 +229,10 @@ end
 
 always_comb begin
     next_state = state;
-    case (state)
-        IDLE: begin
-            if (start) begin
-                next_state = SAMPLE;
-            end
-        end
-        SAMPLE: begin
-            if (sample_addr == 76799) begin
-                next_state = CODE_FFT;
-            end
-        end
-        CODE_FFT: begin
-            if (m_axis_data_tvalid && m_axis_data_tlast) begin
-                next_state = SAMPLE_FFT;
-            end
-        end
-        SAMPLE_FFT: begin
-            if (m_axis_data_tvalid && m_axis_data_tlast) begin
-                next_state = PRODUCT_IFFT;
-            end
-        end
-        PRODUCT_IFFT: begin
-            if (m_axis_data_tvalid && m_axis_data_tlast) begin
-                if (doppler_step != 6'd20) begin
-                    next_state = PRODUCT_IFFT;
-                end else begin
-                    if (start_step != 5'd18) begin
-                        next_state = SAMPLE_FFT;
-                    end else begin
-                        next_state = IDLE;
-                    end
-                end
-            end
-        end
-    endcase
-end
-
-always_comb begin
     next_fft_state = fft_state;
     next_sample_addr = sample_addr;
     next_sample_fft_addr = sample_fft_addr;
     next_code_fft_addr = code_fft_addr;
-    sample_fft_addr_override = sample_fft_addr;
     code_fft_addr_override = code_fft_addr;
     next_sample_i_avg = sample_i_avg;
     next_sample_q_avg = sample_q_avg;
@@ -353,8 +254,8 @@ always_comb begin
     next_start_index = start_index;
     next_dop_index = dop_index;
     next_start_step = start_step;
-    acc_magnitude = {{16{m_axis_data_tdata[31]}}, m_axis_data_tdata[31:16]}*{{16{m_axis_data_tdata[31]}}, m_axis_data_tdata[31:16]} + 
-                    {{16{m_axis_data_tdata[15]}}, m_axis_data_tdata[15:0]}*{{16{m_axis_data_tdata[15]}}, m_axis_data_tdata[15:0]};
+    acc_magnitude = {{16{fft_X_re[15]}}, fft_X_re[15:0]}*{{16{fft_X_re[15]}}, fft_X_re[15:0]} + 
+                    {{16{fft_X_im[15]}}, fft_X_im[15:0]}*{{16{fft_X_im[15]}}, fft_X_im[15:0]};
 
     next_code_phase = {1'b0, code_phase};
     next_lo_phase = lo_phase;
@@ -367,12 +268,12 @@ always_comb begin
     code_strobe = 1'b0;
     code_clear = 1'b0;
 
-    s_axis_config_tdata = '0;
-    s_axis_config_tvalid = 1'b0;
-    s_axis_data_tdata = '0;
-    s_axis_data_tvalid = 1'b0;
-    s_axis_data_tlast = 1'b0;
-    m_axis_data_tready = 1'b0;
+    fft_start = '0;
+    fft_direction = '0;
+    fft_scaling = '0;
+    fft_x_re = '0;
+    fft_x_im = '0;
+    fft_ready = '1;
 
     si_ci_prod = {{16{sample_fft_i_out[15]}}, sample_fft_i_out} * {{16{code_fft_i_out[15]}}, code_fft_i_out};
     sq_cq_prod = {{16{sample_fft_q_out[15]}}, sample_fft_q_out} * {{16{code_fft_q_out[15]}}, code_fft_q_out};
@@ -398,51 +299,51 @@ always_comb begin
                 next_dop_index = '0;
                 next_channel_out = channel_in;
                 next_sv_out = sv;
+                next_state = SAMPLE;
             end
         end
         SAMPLE: begin
             next_lo_phase = lo_phase + LO_RATE;
 
             // Write the sample
-            next_sample_addr = sample_addr + 12'd1;
+            next_sample_addr = sample_addr + 17'd1;
             sample_wen = 1'b1;
 
             if (sample_addr == 76799) begin
+                next_state = CODE_FFT;
                 next_fft_state = FFT_CONF;
                 next_sample_addr = '0;
+                next_code_fft_addr = '0;
             end
         end
         CODE_FFT: begin
             if (fft_state == FFT_CONF) begin
-                s_axis_config_tdata = {2'd0, 12'b10_10_10_10_10_10, 1'b1}; // Forward FFT, conservative scaling
-                s_axis_config_tvalid = 1'b1;
-                if (s_axis_config_tready) begin
-                    next_fft_state = FFT_LOAD;
-                    code_fft_ren = 1'b1; // Start reading code
-                    next_code_fft_addr = code_fft_addr + 12'd1;
-                end
+                fft_start = 1'b1;
+                fft_direction = 1'b0; // Forward FFT
+                fft_scaling = 1'b0;
+                next_fft_state = FFT_LOAD;
+                code_fft_ren = 1'b1; // Start reading code
+                next_code_fft_addr = code_fft_addr + 12'd1;
             end
             if (fft_state == FFT_LOAD) begin
-                s_axis_data_tdata = {16'd0, code ? 16'h7FFF : 16'h8001};
-                s_axis_data_tvalid = 1'b1;
-                if (s_axis_data_tready) begin
-                    code_strobe = 1'b1;
-                    next_code_fft_addr = code_fft_addr + 12'd1;
-                    if (code_fft_addr == '0) begin
-                        next_code_fft_addr = '0;
-                        s_axis_data_tlast = 1'b1;
-                        next_fft_state = FFT_WAIT;
-                    end
+                code_fft_ren = 1'b1; // Start reading code
+                fft_x_re = code ? 16'h7FFF : 16'h8001;
+                fft_x_im = 16'd0;
+                code_strobe = 1'b1;
+                next_code_fft_addr = code_fft_addr + 12'd1;
+                if (code_fft_addr == '0) begin
+                    next_code_fft_addr = '0;
+                    next_fft_state = FFT_WAIT;
                 end
             end
             if (fft_state == FFT_WAIT) begin
-                m_axis_data_tready = 1'b1;
-                if (m_axis_data_tvalid) begin
+                if (fft_done) begin
                     code_fft_wen = 1'b1;
-                    code_fft_addr_override = m_axis_data_tuser[11:0];
-                    if (m_axis_data_tlast) begin
-                        // Initial indices for sample and code FFTs
+                    next_code_fft_addr = code_fft_addr + 12'd1;
+                    if (code_fft_addr == 12'hFFF) begin
+                        next_code_fft_addr = '0;
                         next_sample_fft_addr = '0;
+                        next_state = SAMPLE_FFT;
                         next_fft_state = FFT_CONF;
                     end
                 end
@@ -450,58 +351,49 @@ always_comb begin
         end
         SAMPLE_FFT: begin
             if (fft_state == FFT_CONF) begin
-                s_axis_config_tdata = {2'd0, 12'b10_10_10_10_10_10, 1'b1}; // Forward FFT, conservative scaling
-                s_axis_config_tvalid = 1'b1;
-                if (s_axis_config_tready) begin
-                    next_fft_state = FFT_LOAD;
-                    sample_ren = 1'b1; // Start reading samples
-                    next_sample_addr = sample_addr + 17'd1;
-                    next_sample_fft_addr = '0;
-                    next_code_phase = '0;
-                end
+                fft_start = 1'b1;
+                fft_direction = 1'b0; // Forward FFT
+                fft_scaling = 1'b0;
+                next_fft_state = FFT_LOAD;
+                sample_ren = 1'b1; // Start reading samples
+                next_sample_addr = sample_addr + 17'd1;
+                next_sample_fft_addr = '0;
+                next_code_phase = '0;
             end
             if (fft_state == FFT_LOAD) begin
+                fft_ready = 0;
                 sample_ren = 1'b1;
                 next_code_phase = code_phase + CODE_RATE;
-                s_axis_data_tdata = {sample_downsample_q ? 16'h7FFF : 16'h8001, sample_downsample_i ? 16'h7FFF : 16'h8001};
+                fft_x_re = sample_downsample_i ? 16'h7FFF : 16'h8001;
+                fft_x_im = sample_downsample_q ? 16'h7FFF : 16'h8001;
                 next_sample_addr = (sample_addr + 17'd1) % 76800;
                 next_sample_i_avg = sample_i_avg + (sample_i_out ? 6'd1 : -6'd1);
                 next_sample_q_avg = sample_q_avg + (sample_q_out ? 6'd1 : -6'd1);
                 
                 if (next_code_phase[32]) begin
                     // Finish this averaging period
-                    s_axis_data_tvalid = 1'b1;
-
-                    // Hold til ready
-                    next_sample_i_avg = sample_i_avg;
-                    next_sample_q_avg = sample_q_avg;
-                    next_sample_addr = sample_addr;
+                    fft_ready = 1;
                 
-                    if (s_axis_data_tready) begin
-                        next_sample_i_avg = '0;
-                        next_sample_q_avg = '0;
-                        next_sample_addr = (sample_addr + 17'd1) % 76800;
-                        next_sample_fft_addr = sample_fft_addr + 12'd1;
+                    next_sample_i_avg = '0;
+                    next_sample_q_avg = '0;
+                    next_sample_addr = (sample_addr + 17'd1) % 76800;
+                    next_sample_fft_addr = sample_fft_addr + 12'd1;
 
-                        if (sample_fft_addr == 12'd4095) begin
-                            next_sample_addr = '0;
-                            s_axis_data_tlast = 1'b1;
-                            next_fft_state = FFT_WAIT;
-                        end
-                    end else begin
-                        next_code_phase = code_phase;
+                    if (sample_fft_addr == 12'hFFF) begin
+                        next_sample_addr = '0;
+                        next_sample_fft_addr = '0;
+                        next_fft_state = FFT_WAIT;
                     end
                 end
             end
             if (fft_state == FFT_WAIT) begin
-                m_axis_data_tready = 1'b1;
-                if (m_axis_data_tvalid) begin
+                if (fft_done) begin
                     sample_fft_wen = 1'b1;
-                    sample_fft_addr_override = m_axis_data_tuser[11:0];
-                    if (m_axis_data_tlast) begin
-                        // Initial indices for sample and code FFTs
+                    next_sample_fft_addr = sample_fft_addr + 12'd1;
+                    if (sample_fft_addr == 12'hFFF) begin
                         next_sample_fft_addr = '0;
                         next_code_fft_addr = 12'd0 - {{6{next_doppler_step[5]}}, next_doppler_step};
+                        next_state = PRODUCT_IFFT;
                         next_fft_state = FFT_CONF;
                     end
                 end
@@ -509,52 +401,48 @@ always_comb begin
         end
         PRODUCT_IFFT: begin
             if (fft_state == FFT_CONF) begin
-                s_axis_config_tdata = {2'd0, 12'b10_10_10_10_10_10, 1'b0}; // Inverse FFT, conservative scaling
-                s_axis_config_tvalid = 1'b1;
-                if (s_axis_config_tready) begin
-                    next_fft_state = FFT_LOAD;
-                    sample_fft_ren = 1'b1; // Start reading sample FFT
-                    code_fft_ren = 1'b1; // Start reading code FFT
-                    next_sample_fft_addr = sample_fft_addr + 12'd1;
-                    next_code_fft_addr = code_fft_addr + 12'd1;
-                end
+                fft_start = 1'b1;
+                fft_direction = 1'b1; // Inverse FFT
+                fft_scaling = 1'b0;
+                next_fft_state = FFT_LOAD;
+                sample_fft_ren = 1'b1; // Start reading sample FFT
+                code_fft_ren = 1'b1; // Start reading code FFT
+                next_sample_fft_addr = sample_fft_addr + 12'd1;
+                next_code_fft_addr = code_fft_addr + 12'd1;
             end
             if (fft_state == FFT_LOAD) begin
                 sample_fft_ren = 1'b1;
                 code_fft_ren = 1'b1;
-
-                s_axis_data_tdata = {sq_ci_prod[23:8] - si_cq_prod[23:8], si_ci_prod[23:8] + sq_cq_prod[23:8]};
-                s_axis_data_tvalid = 1'b1;
-                if (s_axis_data_tready) begin
-                    next_sample_fft_addr = sample_fft_addr + 12'd1;
-                    next_code_fft_addr = code_fft_addr + 12'd1;
-                    if (sample_fft_addr == '0) begin
-                        next_sample_fft_addr = '0;
-                        next_code_fft_addr = '0;
-                        s_axis_data_tlast = 1'b1;
-                        next_fft_state = FFT_WAIT;
-                    end
+                fft_x_re = 16'(si_ci_prod >>> 8) + 16'(sq_cq_prod >>> 8);
+                fft_x_im = 16'(sq_ci_prod >>> 8) - 16'(si_cq_prod >>> 8);
+                next_sample_fft_addr = sample_fft_addr + 12'd1;
+                next_code_fft_addr = code_fft_addr + 12'd1;
+                if (sample_fft_addr == '0) begin
+                    next_sample_fft_addr = '0;
+                    next_code_fft_addr = '0;
+                    next_fft_state = FFT_WAIT;
                 end
             end
             if (fft_state == FFT_WAIT) begin
-                m_axis_data_tready = 1'b1;
-                if (m_axis_data_tvalid) begin
+                if (fft_done) begin
+                    next_sample_fft_addr = sample_fft_addr + 12'd1;
                     // Look through the results
-                    if (m_axis_data_tuser[11:0] < 1023) begin
+                    if (sample_fft_addr < 1023) begin
                         // Check for maximum
                         if (acc_magnitude > acc_out) begin
                             next_acc_out = acc_magnitude;
-                            next_code_index = m_axis_data_tuser[11:0];
+                            next_code_index = sample_fft_addr[9:0];
                             next_start_index = start_step;
                             next_dop_index = doppler_step;
                         end
                     end
 
-                    if (m_axis_data_tlast) begin
+                    if (sample_fft_addr == 12'hFFF) begin
                         // Initial indices for sample and code FFTs
                         next_doppler_step = doppler_step + 6'd1;
                         next_sample_fft_addr = '0;
                         next_code_fft_addr = 12'd0 - {{6{next_doppler_step[5]}}, next_doppler_step};
+                        next_state = PRODUCT_IFFT;
                         next_fft_state = FFT_CONF;
 
                         if (doppler_step == 6'd20) begin
@@ -562,14 +450,19 @@ always_comb begin
                             next_doppler_step = -6'd20;
                             next_start_step = start_step + 5'd2;    // 0->18 in steps of 2 equals 10 points within code chip (plenty)
                             next_sample_addr = {12'd0, next_start_step};
+                            next_state = SAMPLE_FFT;
 
                             if (start_step == 5'd18) begin
+                                next_state = IDLE;
                                 next_start_out = 1'b1; // Signal channel to start
                             end
                         end
                     end
                 end
             end
+        end
+        default: begin
+            next_state = IDLE;
         end
     endcase
 end
