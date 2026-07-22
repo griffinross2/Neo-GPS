@@ -2,6 +2,8 @@
 #include <verilated.h>
 #include <verilated_fst_c.h>
 #include <iostream>
+#include <string>
+#include <format>
 
 // Include model header, generated from Verilating "top.v"
 #include "Vl1ca_ac_pca_search_tb.h"
@@ -36,8 +38,10 @@ int main(int argc, char **argv)
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vl1ca_ac_pca_search_tb *const top = new Vl1ca_ac_pca_search_tb{contextp};
 
+    int main_time = 0;
+    std::string outpath = std::format("outputs/l1ca_ac_pca_search_tb/waveform{}.fst", main_time);
     top->trace(tfp, 99);
-    tfp->open("outputs/l1ca_ac_pca_search_tb/waveform.fst");
+    tfp->open(outpath.c_str());
 
     // Simulate until $finish
     while (!contextp->gotFinish())
@@ -48,6 +52,15 @@ int main(int argc, char **argv)
         top->eval();
 
         tfp->dump(contextp->time());
+
+        if (contextp->time() % 1'000'000'000 == 0)
+        {
+            // Break the wavefile
+            tfp->close();
+            main_time++;
+            outpath = std::format("outputs/l1ca_ac_pca_search_tb/waveform{}.fst", main_time);
+            tfp->open(outpath.c_str());
+        }
 
         if (contextp->time() % 10000000 == 0)
         {

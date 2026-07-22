@@ -14,6 +14,9 @@
 `include "common_types.vh"
 import common_types_pkg::*;
 
+// From start asserted to busy deasserted: 
+//      - 55896755 clocks
+//      - 2.911289551 seconds at 19.2 MHz
 module l1ca_ac_pca_search (
     input logic clk, nrst,                      // Clock and reset
     input logic signal_in,                      // Input signal
@@ -72,7 +75,6 @@ fft_4096 fft_inst (
 logic [16:0] sample_addr, next_sample_addr;
 logic [11:0] sample_fft_addr, next_sample_fft_addr;
 logic [11:0] code_fft_addr, next_code_fft_addr;
-logic [11:0] code_fft_addr_override;
 logic signed [5:0] sample_i_avg, next_sample_i_avg, sample_i_avg_plus_sample;
 logic signed [5:0] sample_q_avg, next_sample_q_avg, sample_q_avg_plus_sample;
 logic sample_downsample_i, sample_downsample_q;
@@ -233,7 +235,6 @@ always_comb begin
     next_sample_addr = sample_addr;
     next_sample_fft_addr = sample_fft_addr;
     next_code_fft_addr = code_fft_addr;
-    code_fft_addr_override = code_fft_addr;
     next_sample_i_avg = sample_i_avg;
     next_sample_q_avg = sample_q_avg;
     sample_i_avg_plus_sample = sample_i_avg + (sample_i_out ? 6'd1 : -6'd1);
