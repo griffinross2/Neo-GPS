@@ -12,7 +12,6 @@ module l1ca_ac_pca_search_tb;
     logic [9:0] code_index;             // Chip index of maximum correlation -> 0 thru 1022
     logic [4:0] start_index;            // Sample start index of maximum correlation -> 0 thru 18
     logic [5:0] dop_index;              // Doppler index of maximum correlation 0 thru 40 -> -5000 thru 5000 Hz in 250 Hz steps
-    logic [23:0] code_slip;             // Current code slip since sample in 1/10 of a chip
     logic busy;
     logic [5:0] channel_in;
     logic [5:0] channel_out;

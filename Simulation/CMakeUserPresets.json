@@ -1,0 +1,26 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": false,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_PREFIX_PATH": "C:/Program Files (x86)/Eigen3"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "hidden": false,
+            "configurePreset": "default"
+        }
+    ]
+}

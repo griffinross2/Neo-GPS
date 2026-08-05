@@ -13,7 +13,7 @@ def build(dir, release=False):
             subprocess.run(f'cmake -DCMAKE_BUILD_TYPE=Release .. -G "MinGW Makefiles"', cwd='build', check=True)
         else:
             subprocess.run(f'cmake .. -G "MinGW Makefiles"', cwd='build', check=True)
-        subprocess.run(f'cmake --build . --target {dir}', cwd='build', check=True)
+        subprocess.run(f'cmake --build . --target {dir} -j 4', cwd='build', check=True)
         print(f"Verilation successful.")
     except subprocess.CalledProcessError as e:
         print(f"Error during verilation: {e}")
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument('--clean', action='store_true', help='Clean the verilator project')
     parser.add_argument('--rebuild', action='store_true', help='Clean and build the verilator project')
     parser.add_argument('--all', action='store_true', help='Build and run the verilator project')
-    parser.add_argument('--release', action='store_true', help='Build the verilator project in release mode')    
+    parser.add_argument('--release', action='store_true', help='Build the verilator project in release mode')
 
     args = parser.parse_args()
 
