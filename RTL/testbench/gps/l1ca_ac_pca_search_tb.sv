@@ -13,26 +13,18 @@ module l1ca_ac_pca_search_tb;
     logic [4:0] start_index;            // Sample start index of maximum correlation -> 0 thru 18
     logic [5:0] dop_index;              // Doppler index of maximum correlation 0 thru 40 -> -5000 thru 5000 Hz in 250 Hz steps
     logic busy;
-    logic [5:0] channel_in;
-    logic [5:0] channel_out;
-    sv_t sv_out;
-    logic start_out;
 
     l1ca_ac_pca_search dut (
         .clk(clk),
         .nrst(nrst),
         .start(start),
         .signal_in(signal_in),
-        .channel_in(channel_in),
-        .channel_out(channel_out),
         .sv(sv),
-        .sv_out(sv_out),
         .acc_out(acc_out),
         .code_index(code_index),
         .start_index(start_index),
         .dop_index(dop_index),
-        .busy(busy),
-        .start_out(start_out)
+        .busy(busy)
     );
     initial begin
         clk = 0;
@@ -46,7 +38,6 @@ module l1ca_ac_pca_search_tb;
         nrst = 0;
         start = 0;
         signal_in = 0;
-        channel_in = 0;
         sv = 6'd25;
         bit_count = 0;
 

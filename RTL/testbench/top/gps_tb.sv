@@ -45,31 +45,23 @@ module gps_tb (
     logic [4:0] start_index;            // Sample start index of maximum correlation -> 0 thru 18
     logic [5:0] dop_index;              // Doppler index of maximum correlation 0 thru 40 -> -5000 thru 5000 Hz in 250 Hz steps
     logic busy;
-    logic [5:0] channel_in;
-    logic [5:0] channel_out;
-    sv_t sv_out;
-    logic start_out;
 
     l1ca_ac_pca_search search_dut (
         .clk(clk),
         .nrst(nrst),
         .start(start),
         .signal_in(signal_in),
-        .channel_in(channel_in),
-        .channel_out(channel_out),
         .sv(sv),
-        .sv_out(sv_out),
         .acc_out(acc_out),
         .code_index(code_index),
         .start_index(start_index),
         .dop_index(dop_index),
-        .busy(busy),
-        .start_out(start_out)
+        .busy(busy)
     );
 
     // search_ctrl: [7] Busy, [6] Start, [5:0] SV
     logic next_start;
-    sv_t next_sv;    
+    sv_t next_sv;
     
     always_ff @(posedge clk or negedge nrst) begin
         if (!nrst) begin
@@ -84,8 +76,10 @@ module gps_tb (
     always_comb begin
         next_start = start;
         next_sv = sv;
+        spi_data_in = 8'h00;
 
         case (spi_addr_out)
+            // Search control register
             7'd0: begin
                 spi_data_in = {busy, start, sv};
                 if (spi_write) begin
@@ -93,7 +87,40 @@ module gps_tb (
                     next_sv = spi_data_out[5:0];
                 end
             end
-            default: begin end
+
+            // Search results - Accumulator
+            7'd1: begin
+                spi_data_in = acc_out[7:0];
+            end
+            7'd2: begin
+                spi_data_in = acc_out[15:8];
+            end
+            7'd3: begin
+                spi_data_in = acc_out[23:16];
+            end
+            7'd4: begin
+                spi_data_in = acc_out[31:24];
+            end
+
+            // Search results - code index, start index, doppler index
+            7'd5: begin
+                // Code index [7:0]
+                spi_data_in = code_index[7:0];
+            end
+            7'd6: begin
+                // [7:6] - Code index [9:8]
+                // [5]   - reserved
+                // [4:0] - start index [4:0]
+                spi_data_in = {code_index[9:8], 1'b0, start_index[4:0]};
+            end
+            7'd7: begin
+                // [7:6] - reserved
+                // [5:0] - doppler index [5:0]
+                spi_data_in = {2'b00, dop_index[5:0]};
+            end
+            default: begin 
+                spi_data_in = 8'h00;
+            end
         endcase
 
         if (busy) begin
@@ -134,7 +161,6 @@ module gps_tb (
         begin
             nrst = 0;
             signal_in = 0;
-            channel_in = 0;
             bit_count = 0;
 
             #200 nrst = 1;
@@ -151,7 +177,7 @@ module gps_tb (
 
             $display("Finished search: %.2f ns", $realtime());
 
-            #10 $finish; // End simulation
+            #10ms $finish; // End simulation
         end
 
         join

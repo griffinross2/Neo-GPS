@@ -16,7 +16,8 @@ typedef enum
     SPI_IDLE,
     SPI_ADDR,
     SPI_DATA,
-    SPI_END,
+    SPI_CS_TIME,
+    SPI_END
 } spi_state_t;
 
 spi_state_t spi_state = SPI_IDLE;
@@ -94,7 +95,7 @@ void spi_task(Vgps_tb *const top)
                 if (spi_bit_counter > 7)
                 {
                     spi_bit_counter = 0;
-                    spi_state = SPI_END;
+                    spi_state = SPI_CS_TIME;
                 }
             }
 
@@ -107,7 +108,7 @@ void spi_task(Vgps_tb *const top)
                 if (spi_bit_counter > 8)
                 {
                     spi_bit_counter = 0;
-                    spi_state = SPI_END;
+                    spi_state = SPI_CS_TIME;
                 }
             }
         }
@@ -117,7 +118,7 @@ void spi_task(Vgps_tb *const top)
         }
 
         break;
-    case SPI_END:
+    case SPI_CS_TIME:
 
         if (spi_clock_counter >= SPI_CLOCK_DIVIDER - 1)
         {
@@ -127,7 +128,8 @@ void spi_task(Vgps_tb *const top)
             if (top->gps_tb->sck == 0)
             {
                 top->gps_tb->cs = 1; // Deassert chip select
-                spi_state = SPI_IDLE;
+                spi_bit_counter = 0;
+                spi_state = SPI_END;
             }
         }
         else
@@ -136,6 +138,17 @@ void spi_task(Vgps_tb *const top)
         }
 
         break;
+
+    case SPI_END:
+        if (spi_clock_counter >= 2 * SPI_CLOCK_DIVIDER - 1)
+        {
+            spi_bit_counter = 0;
+            spi_state = SPI_IDLE;
+        }
+        else
+        {
+            spi_clock_counter++;
+        }
     }
 }
 

@@ -1,14 +1,9 @@
 // Include common routines
 #include <verilated.h>
 #include <verilated_fst_c.h>
-#include <iostream>
-#include <string>
-#include <format>
 
 // Include model header, generated from Verilating "top.v"
-#include "Vgps_tb.h"
-
-#include "test_program.h"
+#include "Vl1ca_code_lut_tb.h"
 
 double sc_time_stamp()
 {
@@ -38,40 +33,20 @@ int main(int argc, char **argv)
     tfp->set_time_resolution("ns");
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vgps_tb *const top = new Vgps_tb{contextp};
+    Vl1ca_code_lut_tb *const top = new Vl1ca_code_lut_tb{contextp};
 
-    int main_time = 0;
-    std::string outpath = std::format("outputs/gps_tb/waveform{}.fst", main_time);
     top->trace(tfp, 99);
-    tfp->open(outpath.c_str());
-
-    test_program_init(top);
+    tfp->open("outputs/l1ca_code_lut_tb/waveform.fst");
 
     // Simulate until $finish
     while (!contextp->gotFinish())
     {
         contextp->timeInc(1);
 
-        test_program_task(contextp, top);
-
         // Evaluate model
         top->eval();
 
         tfp->dump(contextp->time());
-
-        if (contextp->time() % 1'000'000'000 == 0)
-        {
-            // Break the wavefile
-            tfp->close();
-            main_time++;
-            outpath = std::format("outputs/gps_tb/waveform{}.fst", main_time);
-            tfp->open(outpath.c_str());
-        }
-
-        if (contextp->time() % 10000000 == 0)
-        {
-            std::cout << "Simulation time: " << (contextp->time() / 1000000) << " ms" << std::endl;
-        }
     }
 
     // Final model cleanup

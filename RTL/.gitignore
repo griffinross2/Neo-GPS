@@ -3,3 +3,4 @@ outputs/
 vivado/
 *.hex
 *.bin
+!src/**/*.hex

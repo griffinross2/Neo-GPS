@@ -1,5 +1,9 @@
 # Create a new executable target that will contain all your sources
-add_executable(gps_tb sim_main.cpp spi_host.cpp)
+add_executable(gps_tb
+    sim_main.cpp
+    spi_host.cpp
+    test_program.cpp
+)
 
 set(RTL_SOURCES
     ../../testbench/top/gps_tb.sv

@@ -22,14 +22,10 @@ module l1ca_ac_pca_search (
     input logic signal_in,                      // Input signal
     input logic start,                          // Start acquisition
     input sv_t sv,                              // SV number to search
-    input logic [5:0] channel_in,               // Channel number to initialize after acquisition
     output word_t acc_out,                      // Maximum correlation
     output logic [9:0] code_index,              // Chip index of maximum correlation -> 0 thru 1022
     output logic [4:0] start_index,             // Sample start index of maximum correlation -> 0 thru 18
     output logic [5:0] dop_index,               // Doppler index of maximum correlation 0 thru 40 -> -5000 thru 5000 Hz in 250 Hz steps
-    output logic [5:0] channel_out,             // Channel number to initialize after acquisition
-    output sv_t sv_out,                         // SV number to initialize after acquisition
-    output logic start_out,                     // Start signal for the channel
     output logic busy                           // Busy signal
 );
 
@@ -98,7 +94,6 @@ word_t next_acc_out;
 logic [9:0] next_code_index;
 logic [4:0] next_start_index;
 logic [5:0] next_dop_index;
-logic [5:0] next_channel_out;
 sv_t next_sv_out;
 logic next_start_out;
 
@@ -204,9 +199,6 @@ always_ff @(posedge clk) begin
         code_index <= '0;
         start_index <= '0;
         dop_index <= '0;
-        channel_out <= '0;
-        sv_out <= '0;
-        start_out <= 1'b0;
     end else begin
         state <= next_state;
         sample_addr <= next_sample_addr;
@@ -223,9 +215,6 @@ always_ff @(posedge clk) begin
         code_index <= next_code_index;
         start_index <= next_start_index;
         dop_index <= next_dop_index;
-        channel_out <= next_channel_out;
-        sv_out <= sv;
-        start_out <= next_start_out;
     end
 end
 
@@ -260,9 +249,6 @@ always_comb begin
 
     next_code_phase = {1'b0, code_phase};
     next_lo_phase = lo_phase;
-    next_channel_out = channel_out;
-    next_sv_out = sv_out;
-    next_start_out = 1'b0;
 
     busy = 1'b1;
 
@@ -298,8 +284,6 @@ always_comb begin
                 next_code_index = '0;
                 next_start_index = '0;
                 next_dop_index = '0;
-                next_channel_out = channel_in;
-                next_sv_out = sv;
                 next_state = SAMPLE;
             end
         end
@@ -415,7 +399,7 @@ always_comb begin
                 sample_fft_ren = 1'b1;
                 code_fft_ren = 1'b1;
                 fft_x_re = 16'(si_ci_prod >>> 8) + 16'(sq_cq_prod >>> 8);
-                fft_x_im = 16'(sq_ci_prod >>> 8) - 16'(si_cq_prod >>> 8);
+                fft_x_im = 16'(si_cq_prod >>> 8) - 16'(sq_ci_prod >>> 8);
                 next_sample_fft_addr = sample_fft_addr + 12'd1;
                 next_code_fft_addr = code_fft_addr + 12'd1;
                 if (sample_fft_addr == '0) begin
@@ -455,7 +439,6 @@ always_comb begin
 
                             if (start_step == 5'd18) begin
                                 next_state = IDLE;
-                                next_start_out = 1'b1; // Signal channel to start
                             end
                         end
                     end
