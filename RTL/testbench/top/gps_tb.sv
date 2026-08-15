@@ -6,7 +6,7 @@ import common_types_pkg::*;
 module gps_tb (
 );
 
-    logic clk, nrst;
+    logic gps_clk, core_clk, nrst;
     logic [7:0] spi_data_in;
     logic [7:0] spi_data_out;
     logic [6:0] spi_addr_out;
@@ -18,7 +18,7 @@ module gps_tb (
     logic cs /*verilator public*/;
 
     spi_device spi_dut (
-        .clk(clk),
+        .clk(core_clk),
         .nrst(nrst),
         .data_in(spi_data_in),
         .data_out(spi_data_out),
@@ -33,8 +33,13 @@ module gps_tb (
 
     // Clock generation
     initial begin
-        clk = 0;
-        forever #26.0417 clk = ~clk;
+        gps_clk = 0;
+        forever #26.041666667 gps_clk = ~gps_clk;
+    end
+
+    initial begin
+        core_clk = 0;
+        forever #10 core_clk = ~core_clk;
     end
 
     logic signal_in;                    // Input signal
@@ -47,7 +52,8 @@ module gps_tb (
     logic busy;
 
     l1ca_ac_pca_search search_dut (
-        .clk(clk),
+        .gps_clk(gps_clk),
+        .core_clk(core_clk),
         .nrst(nrst),
         .start(start),
         .signal_in(signal_in),
@@ -63,7 +69,7 @@ module gps_tb (
     logic next_start;
     sv_t next_sv;
     
-    always_ff @(posedge clk or negedge nrst) begin
+    always_ff @(posedge core_clk or negedge nrst) begin
         if (!nrst) begin
             start <= '0;
             sv <= '0;
@@ -136,6 +142,8 @@ module gps_tb (
         
         // Signal file feed
         begin
+            wait (start == 1'b1);
+
             fd = $fopen("signal.bin", "rb");
             if (fd == 0) begin
                 $display("Error opening signal.bin");
@@ -144,7 +152,7 @@ module gps_tb (
 
             // Read the input signal from the binary file
             while (!$feof(fd)) begin
-                @(negedge clk);
+                @(negedge gps_clk);
                 if (bit_count == 0) begin
                     // Read byte every 8 bits
                     signal_byte = $fgetc(fd);
@@ -169,9 +177,9 @@ module gps_tb (
 
             $display("Started search: %.2f ns", $realtime());
 
-            @(posedge clk);
-            @(posedge clk);
-            @(posedge clk);
+            @(posedge gps_clk);
+            @(posedge gps_clk);
+            @(posedge gps_clk);
 
             wait (busy == 1'b0);
 

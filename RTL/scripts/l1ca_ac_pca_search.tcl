@@ -30,6 +30,7 @@
     }
 
     add_files -fileset sources_1 [ glob ../src/memory/spram.v ]
+    add_files -fileset sources_1 [ glob ../src/memory/dpram.v ]
     add_files -fileset sources_1 [ glob ../src/dsp/fft/*.sv ]
     add_files -fileset sources_1 [ glob ../src/gps/l1ca_ac_pca_search.sv ]
     add_files -fileset sources_1 [ glob ../src/gps/l1ca_code.sv ]

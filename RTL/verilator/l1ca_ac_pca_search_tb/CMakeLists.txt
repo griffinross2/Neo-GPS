@@ -11,6 +11,7 @@ set(RTL_SOURCES
     ../../src/dsp/fft/twiddle_unit.sv
     ../../src/dsp/fft/control_unit.sv
     ../../src/memory/spram.v
+    ../../src/memory/dpram.v
 )
 
 # Add the Verilated circuit to the target

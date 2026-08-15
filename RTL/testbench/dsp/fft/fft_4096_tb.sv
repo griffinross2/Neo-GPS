@@ -8,6 +8,7 @@ logic start;
 logic direction;
 logic scaling;
 logic data_ready;
+logic stop_output;
 logic done;
 
 logic signed [15:0] x_re, x_im;
@@ -27,6 +28,7 @@ fft_4096 dut (
     .direction(direction),
     .scaling(scaling),
     .data_ready(data_ready),
+    .stop_output(stop_output),
     .done(done),
     .x_re(x_re),
     .x_im(x_im),
@@ -46,6 +48,7 @@ initial begin
     direction = 0;
     scaling = 0;
     data_ready = 1;
+    stop_output = 0;
     x_re = 16'sd0;
     x_im = 16'sd0;
     

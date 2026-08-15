@@ -18,7 +18,7 @@ import common_types_pkg::*;
 //      - 55896755 clocks
 //      - 2.911289551 seconds at 19.2 MHz
 module l1ca_ac_pca_search (
-    input logic clk, nrst,                      // Clock and reset
+    input logic gps_clk, core_clk, nrst,        // Clock and reset
     input logic signal_in,                      // Input signal
     input logic start,                          // Start acquisition
     input sv_t sv,                              // SV number to search
@@ -50,17 +50,19 @@ logic fft_start;
 logic fft_direction;
 logic fft_scaling;
 logic fft_ready;
+logic fft_stop_output;
 logic fft_done;
 logic [15:0] fft_x_re, fft_x_im;
 logic [15:0] fft_X_re, fft_X_im;
 
 fft_4096 fft_inst (
-    .clk(clk),
+    .clk(core_clk),
     .nrst(nrst),
     .start(fft_start),
     .direction(fft_direction),
     .scaling(fft_scaling),
     .data_ready(fft_ready),
+    .stop_output(fft_stop_output),
     .done(fft_done),
     .x_re(fft_x_re),
     .x_im(fft_x_im),
@@ -68,11 +70,15 @@ fft_4096 fft_inst (
     .X_im(fft_X_im)
 );
 
-logic [16:0] sample_addr, next_sample_addr;
+logic [16:0] sample_addr_gps, next_sample_addr_gps;
+logic [16:0] sample_addr_core, next_sample_addr_core;
+logic [1:0] next_sample_phase_start_sync, sample_phase_start_sync;
+logic [1:0] next_sample_phase_end_sync, sample_phase_end_sync;
+
 logic [11:0] sample_fft_addr, next_sample_fft_addr;
 logic [11:0] code_fft_addr, next_code_fft_addr;
-logic signed [5:0] sample_i_avg, next_sample_i_avg, sample_i_avg_plus_sample;
-logic signed [5:0] sample_q_avg, next_sample_q_avg, sample_q_avg_plus_sample;
+logic signed [7:0] sample_i_avg, next_sample_i_avg, sample_i_avg_plus_sample;
+logic signed [7:0] sample_q_avg, next_sample_q_avg, sample_q_avg_plus_sample;
 logic sample_downsample_i, sample_downsample_q;
 logic sample_i_in;
 logic sample_q_in;
@@ -94,8 +100,6 @@ word_t next_acc_out;
 logic [9:0] next_code_index;
 logic [4:0] next_start_index;
 logic [5:0] next_dop_index;
-sv_t next_sv_out;
-logic next_start_out;
 
 // Code NCOs
 logic [31:0] code_phase;
@@ -111,29 +115,35 @@ localparam LO_SIN = 4'b0011;
 localparam LO_COS = 4'b1001;
 
 // Sample memory
-spram #(
+dpram #(
     .ADDR_WIDTH(17),
     .RAM_DEPTH(76800), // 4ms at 19200000 Hz
     .DATA_WIDTH(1)
 ) sample_i (
-    .clka(clk),
-    .ena(sample_wen | sample_ren),
+    .clka(gps_clk),
+    .ena(sample_wen),
     .wea(sample_wen),
-    .addra(sample_addr),
+    .addra(sample_addr_gps),
+    .clkb(core_clk),
+    .enb(sample_ren),
+    .addrb(sample_addr_core),
     .dia(sample_i_in),
-    .doa(sample_i_out)
+    .dob(sample_i_out)
 );
-spram #(
+dpram #(
     .ADDR_WIDTH(17),
     .RAM_DEPTH(76800), // 4ms at 19200000 Hz
     .DATA_WIDTH(1)
 ) sample_q (
-    .clka(clk),
-    .ena(sample_wen | sample_ren),
+    .clka(gps_clk),
+    .ena(sample_wen),
     .wea(sample_wen),
-    .addra(sample_addr),
+    .addra(sample_addr_gps),
+    .clkb(core_clk),
+    .enb(sample_ren),
+    .addrb(sample_addr_core),
     .dia(sample_q_in),
-    .doa(sample_q_out)
+    .dob(sample_q_out)
 );
 
 // Sample FFT results
@@ -142,7 +152,7 @@ spram #(
     .RAM_DEPTH(4096),
     .DATA_WIDTH(32)
 ) sample_fft (
-    .clka(clk),
+    .clka(core_clk),
     .ena(sample_fft_wen | sample_fft_ren),
     .wea(sample_fft_wen),
     .addra(sample_fft_addr),
@@ -156,7 +166,7 @@ spram #(
     .RAM_DEPTH(4096),
     .DATA_WIDTH(32)
 ) code_fft (
-    .clka(clk),
+    .clka(core_clk),
     .ena(code_fft_wen | code_fft_ren),
     .wea(code_fft_wen),
     .addra(code_fft_addr),
@@ -172,7 +182,7 @@ logic [9:0] code_num;
 
 // Code generator
 l1ca_code code_gen (
-    .clk(clk),
+    .clk(core_clk),
     .nrst(nrst),
     .en(code_strobe),
     .clear(code_clear),
@@ -182,16 +192,26 @@ l1ca_code code_gen (
     .epoch(epoch)
 );
 
-always_ff @(posedge clk) begin
+always_ff @(posedge gps_clk, negedge nrst) begin
+    if (~nrst) begin
+        sample_addr_gps <= '0;
+        lo_phase <= '0;
+        sample_phase_start_sync <= '0;
+    end else begin
+        sample_addr_gps <= next_sample_addr_gps;
+        lo_phase <= next_lo_phase;
+        sample_phase_start_sync <= next_sample_phase_start_sync;
+    end
+end
+
+always_ff @(posedge core_clk, negedge nrst) begin
     if (~nrst) begin
         state <= IDLE;
-        sample_addr <= '0;
         sample_fft_addr <= '0;
         code_fft_addr <= '0;
         sample_i_avg <= '0;
         sample_q_avg <= '0;
         code_phase <= '0;
-        lo_phase <= '0;
         fft_state <= FFT_CONF;
         doppler_step <= -6'd20;
         start_step <= '0;
@@ -199,15 +219,15 @@ always_ff @(posedge clk) begin
         code_index <= '0;
         start_index <= '0;
         dop_index <= '0;
+        sample_addr_core <= '0;
+        sample_phase_end_sync <= '0;
     end else begin
         state <= next_state;
-        sample_addr <= next_sample_addr;
         sample_fft_addr <= next_sample_fft_addr;
         code_fft_addr <= next_code_fft_addr;
         sample_i_avg <= next_sample_i_avg;
         sample_q_avg <= next_sample_q_avg;
         code_phase <= next_code_phase[31:0];
-        lo_phase <= next_lo_phase;
         fft_state <= next_fft_state;
         doppler_step <= next_doppler_step;
         start_step <= next_start_step;
@@ -215,29 +235,33 @@ always_ff @(posedge clk) begin
         code_index <= next_code_index;
         start_index <= next_start_index;
         dop_index <= next_dop_index;
+        sample_addr_core <= next_sample_addr_core;
+        sample_phase_end_sync <= next_sample_phase_end_sync;
     end
 end
 
 always_comb begin
     next_state = state;
     next_fft_state = fft_state;
-    next_sample_addr = sample_addr;
+    next_sample_addr_core = sample_addr_core;
+    next_sample_addr_gps = sample_addr_gps;
     next_sample_fft_addr = sample_fft_addr;
     next_code_fft_addr = code_fft_addr;
     next_sample_i_avg = sample_i_avg;
     next_sample_q_avg = sample_q_avg;
-    sample_i_avg_plus_sample = sample_i_avg + (sample_i_out ? 6'd1 : -6'd1);
-    sample_q_avg_plus_sample = sample_q_avg + (sample_q_out ? 6'd1 : -6'd1);
-    sample_i_in = signal_in ^ (LO_SIN[lo_phase[17:16]]);
-    sample_q_in = signal_in ^ (LO_COS[lo_phase[17:16]]);
+    // Multiply incoming signal by e^(-j*2*pi*fc*t) -> cos(2*pi*fc*t) - j*sin(2*pi*fc*t)
+    sample_i_in = signal_in ^ (LO_COS[lo_phase[17:16]]);
+    sample_i_avg_plus_sample = sample_i_avg + (sample_i_out ? 8'd1 : -8'd1);
+    sample_q_in = signal_in ^ (LO_SIN[lo_phase[17:16]]);
+    sample_q_avg_plus_sample = sample_q_avg + (sample_q_out ? -8'd1 : 8'd1);
     sample_wen = 1'b0;
     sample_ren = 1'b0;
     sample_fft_wen = 1'b0;
     sample_fft_ren = 1'b0;
     code_fft_wen = 1'b0;
     code_fft_ren = 1'b0;
-    sample_downsample_i = ~sample_i_avg_plus_sample[5];
-    sample_downsample_q = ~sample_q_avg_plus_sample[5];
+    sample_downsample_i = ~sample_i_avg_plus_sample[7];
+    sample_downsample_q = ~sample_q_avg_plus_sample[7];
     next_doppler_step = doppler_step;
     next_acc_out = acc_out;
     next_code_index = code_index;
@@ -248,7 +272,8 @@ always_comb begin
                     {{16{fft_X_im[15]}}, fft_X_im[15:0]}*{{16{fft_X_im[15]}}, fft_X_im[15:0]};
 
     next_code_phase = {1'b0, code_phase};
-    next_lo_phase = lo_phase;
+    next_lo_phase = lo_phase + LO_RATE;
+
 
     busy = 1'b1;
 
@@ -261,17 +286,27 @@ always_comb begin
     fft_x_re = '0;
     fft_x_im = '0;
     fft_ready = '1;
+    fft_stop_output = '0;
 
     si_ci_prod = {{16{sample_fft_i_out[15]}}, sample_fft_i_out} * {{16{code_fft_i_out[15]}}, code_fft_i_out};
     sq_cq_prod = {{16{sample_fft_q_out[15]}}, sample_fft_q_out} * {{16{code_fft_q_out[15]}}, code_fft_q_out};
     si_cq_prod = {{16{sample_fft_i_out[15]}}, sample_fft_i_out} * {{16{code_fft_q_out[15]}}, code_fft_q_out};
     sq_ci_prod = {{16{sample_fft_q_out[15]}}, sample_fft_q_out} * {{16{code_fft_i_out[15]}}, code_fft_i_out};
 
+    next_sample_phase_start_sync = {sample_phase_start_sync[0], (state == SAMPLE)};
+    next_sample_phase_end_sync = {sample_phase_end_sync[0], (sample_addr_gps == 17'd76800)};
+
+    if (&sample_phase_start_sync) begin
+        // The synchronizer provides a CDC-safe way to detect the start of sampling
+        next_sample_addr_gps = sample_addr_gps + 17'd1;
+        sample_wen = 1'b1;
+    end
+
     case (state)
         IDLE: begin
             busy = 1'b0;
             if (start) begin
-                next_sample_addr = '0;
+                next_sample_addr_core = '0;
                 next_sample_fft_addr = '0;
                 next_code_fft_addr = '0;
                 next_sample_i_avg = '0;
@@ -285,19 +320,14 @@ always_comb begin
                 next_start_index = '0;
                 next_dop_index = '0;
                 next_state = SAMPLE;
+                next_sample_phase_end_sync = '0;
             end
         end
         SAMPLE: begin
-            next_lo_phase = lo_phase + LO_RATE;
-
-            // Write the sample
-            next_sample_addr = sample_addr + 17'd1;
-            sample_wen = 1'b1;
-
-            if (sample_addr == 76799) begin
+            if (&sample_phase_end_sync) begin
+                // The synchronizer provides a CDC-safe way to detect the end of sampling
                 next_state = CODE_FFT;
                 next_fft_state = FFT_CONF;
-                next_sample_addr = '0;
                 next_code_fft_addr = '0;
             end
         end
@@ -341,9 +371,11 @@ always_comb begin
                 fft_scaling = 1'b0;
                 next_fft_state = FFT_LOAD;
                 sample_ren = 1'b1; // Start reading samples
-                next_sample_addr = sample_addr + 17'd1;
+                next_sample_addr_core = (sample_addr_core + 17'd1) % 76800;
                 next_sample_fft_addr = '0;
                 next_code_phase = '0;
+                next_sample_i_avg = '0;
+                next_sample_q_avg = '0;
             end
             if (fft_state == FFT_LOAD) begin
                 fft_ready = 0;
@@ -351,9 +383,9 @@ always_comb begin
                 next_code_phase = code_phase + CODE_RATE;
                 fft_x_re = sample_downsample_i ? 16'h7FFF : 16'h8001;
                 fft_x_im = sample_downsample_q ? 16'h7FFF : 16'h8001;
-                next_sample_addr = (sample_addr + 17'd1) % 76800;
-                next_sample_i_avg = sample_i_avg + (sample_i_out ? 6'd1 : -6'd1);
-                next_sample_q_avg = sample_q_avg + (sample_q_out ? 6'd1 : -6'd1);
+                next_sample_addr_core = (sample_addr_core + 17'd1) % 76800;
+                next_sample_i_avg = sample_i_avg_plus_sample;
+                next_sample_q_avg = sample_q_avg_plus_sample;
                 
                 if (next_code_phase[32]) begin
                     // Finish this averaging period
@@ -361,11 +393,11 @@ always_comb begin
                 
                     next_sample_i_avg = '0;
                     next_sample_q_avg = '0;
-                    next_sample_addr = (sample_addr + 17'd1) % 76800;
+                    next_sample_addr_core = (sample_addr_core + 17'd1) % 76800;
                     next_sample_fft_addr = sample_fft_addr + 12'd1;
 
                     if (sample_fft_addr == 12'hFFF) begin
-                        next_sample_addr = '0;
+                        next_sample_addr_core = '0;
                         next_sample_fft_addr = '0;
                         next_fft_state = FFT_WAIT;
                     end
@@ -411,22 +443,21 @@ always_comb begin
             if (fft_state == FFT_WAIT) begin
                 if (fft_done) begin
                     next_sample_fft_addr = sample_fft_addr + 12'd1;
-                    // Look through the results
-                    if (sample_fft_addr < 1023) begin
-                        // Check for maximum
-                        if (acc_magnitude > acc_out) begin
-                            next_acc_out = acc_magnitude;
-                            next_code_index = sample_fft_addr[9:0];
-                            next_start_index = start_step;
-                            next_dop_index = doppler_step;
-                        end
+                    // Look through the results and check for maximum
+                    if (acc_magnitude > acc_out) begin
+                        next_acc_out = acc_magnitude;
+                        next_code_index = sample_fft_addr[9:0];
+                        next_start_index = start_step;
+                        next_dop_index = doppler_step;
                     end
 
-                    if (sample_fft_addr == 12'hFFF) begin
+                    if (sample_fft_addr == 12'd1022) begin
+                        // Cut off the fft output, we don't care about the rest
+                        fft_stop_output = 1'b1;
+
                         // Initial indices for sample and code FFTs
                         next_doppler_step = doppler_step + 6'd1;
                         next_sample_fft_addr = '0;
-                        next_code_fft_addr = 12'd0 - {{6{next_doppler_step[5]}}, next_doppler_step};
                         next_state = PRODUCT_IFFT;
                         next_fft_state = FFT_CONF;
 
@@ -434,13 +465,15 @@ always_comb begin
                             // We have finished all Doppler steps, now we need to increment the start step
                             next_doppler_step = -6'd20;
                             next_start_step = start_step + 5'd2;    // 0->18 in steps of 2 equals 10 points within code chip (plenty)
-                            next_sample_addr = {12'd0, next_start_step};
+                            next_sample_addr_core = {12'd0, next_start_step};
                             next_state = SAMPLE_FFT;
 
                             if (start_step == 5'd18) begin
                                 next_state = IDLE;
                             end
                         end
+                        
+                        next_code_fft_addr = 12'd0 - {{6{next_doppler_step[5]}}, next_doppler_step};
                     end
                 end
             end
@@ -449,6 +482,17 @@ always_comb begin
             next_state = IDLE;
         end
     endcase
+
+    if (sample_addr_gps >= 17'd76800) begin
+        // Prevent writing anymore past the memory
+        // will happen at end of SAMPLE state
+        sample_wen = 1'b0;
+    end
+
+    if (~|sample_phase_start_sync) begin
+        // Reset address outside of sample phase
+        next_sample_addr_gps = '0;
+    end
 end
 
 endmodule

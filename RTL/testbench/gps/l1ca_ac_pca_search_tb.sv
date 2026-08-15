@@ -4,7 +4,7 @@
 import common_types_pkg::*;
 
 module l1ca_ac_pca_search_tb;
-    logic clk, nrst;                    // Clock and reset
+    logic gps_clk, core_clk, nrst;      // Clock and reset
     logic signal_in;                    // Input signal
     logic start;                        // Start acquisition
     sv_t sv;                            // SV number to search
@@ -15,7 +15,8 @@ module l1ca_ac_pca_search_tb;
     logic busy;
 
     l1ca_ac_pca_search dut (
-        .clk(clk),
+        .gps_clk(gps_clk),
+        .core_clk(core_clk),
         .nrst(nrst),
         .start(start),
         .signal_in(signal_in),
@@ -27,8 +28,13 @@ module l1ca_ac_pca_search_tb;
         .busy(busy)
     );
     initial begin
-        clk = 0;
-        forever #26.0417 clk = ~clk;
+        gps_clk = 0;
+        forever #26.0417 gps_clk = ~gps_clk;
+    end
+
+    initial begin
+        core_clk = 0;
+        forever #10 core_clk = ~core_clk;
     end
 
     integer fd;
@@ -38,14 +44,15 @@ module l1ca_ac_pca_search_tb;
         nrst = 0;
         start = 0;
         signal_in = 0;
-        sv = 6'd25;
+        sv = 6'd6;
         bit_count = 0;
 
         #200 nrst = 1;
         
-        @(posedge clk);
+        @(posedge core_clk);
         start = 1;
-        @(posedge clk);
+        @(posedge core_clk);
+        start = 0;
 
         $display("Started search: %.2f ns", $realtime());
 
@@ -57,7 +64,7 @@ module l1ca_ac_pca_search_tb;
 
         // Read the input signal from the binary file
         while (!$feof(fd) && busy) begin
-            @(negedge clk);
+            @(negedge gps_clk);
             if (bit_count == 0) begin
                 // Read byte every 8 bits
                 signal_byte = $fgetc(fd);
@@ -68,8 +75,6 @@ module l1ca_ac_pca_search_tb;
         end
 
         $fclose(fd);
-
-        start = 0;
 
         wait (busy == 1'b0);
 

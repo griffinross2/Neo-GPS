@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
         tfp->dump(contextp->time());
 
-        if (contextp->time() % 1'000'000'000 == 0)
+        if (contextp->time() % 500'000'000 == 0)
         {
             // Break the wavefile
             tfp->close();

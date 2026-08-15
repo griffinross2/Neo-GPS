@@ -15,6 +15,7 @@
 #include "constants.h"
 #include "l1ca_code.h"
 #include "fftw3.h"
+#include <print>
 
 static void correlate(fftw_complex *code, fftw_complex *signal, int len, GPS_Config_t &gps_conf, double doppler_range, unsigned int &code_phase_idx, int &doppler_idx, double &snr)
 {
@@ -98,6 +99,7 @@ GPS_Status_t l1ca_search_ac_pca(uint8_t *samples, size_t num_samples, GPS_Config
 
     // Variables
     fftw_complex *sample_buf = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * FFT_SIZE);
+    memset(sample_buf, 0, sizeof(fftw_complex) * FFT_SIZE);
     fftw_complex *sample_fft_buf = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * FFT_SIZE);
     fftw_plan plan_samples = fftw_plan_dft_1d(FFT_SIZE, sample_buf, sample_fft_buf, FFTW_FORWARD, FFTW_ESTIMATE);
 
@@ -109,7 +111,6 @@ GPS_Status_t l1ca_search_ac_pca(uint8_t *samples, size_t num_samples, GPS_Config
     double carrier_nco = 0.0;
     double code_nco = 0.0;
 
-    size_t best_offset = 0;
     double best_power = 0.0;
 
     // Get code FFT
@@ -123,12 +124,15 @@ GPS_Status_t l1ca_search_ac_pca(uint8_t *samples, size_t num_samples, GPS_Config
 
     for (size_t offset = 0; offset < NUM_OFFSETS; offset++)
     {
+        code_nco = 0.0;
+        carrier_nco = 0.0;
+
         // Average samples with this offset
         size_t dest_idx = 0;
         for (size_t i = 0; i < num_samples; i++)
         {
-            sample_buf[dest_idx][0] += (samples[offset + i] ^ carrier_sin[(int)carrier_nco % 4]) ? -1.0 : 1.0;
-            sample_buf[dest_idx][1] += (samples[offset + i] ^ carrier_cos[(int)carrier_nco % 4]) ? -1.0 : 1.0;
+            sample_buf[dest_idx][0] += (samples[offset + i] ^ carrier_cos[(int)carrier_nco % 4]) ? 1.0 : -1.0;
+            sample_buf[dest_idx][1] += (samples[offset + i] ^ carrier_sin[(int)carrier_nco % 4]) ? -1.0 : 1.0;
 
             // Increment code phase, and take the average at the end of each chip
             code_nco += GPS_L1CA_CODE_RATE_CPS / gps_conf.sample_rate_sps;
@@ -161,7 +165,6 @@ GPS_Status_t l1ca_search_ac_pca(uint8_t *samples, size_t num_samples, GPS_Config
         if (this_power > best_power)
         {
             best_power = this_power;
-            best_offset = offset;
 
             code_phase = code_phase_idx - (offset * GPS_L1CA_CODE_RATE_CPS / gps_conf.sample_rate_sps);
             doppler = doppler_idx * GPS_L1CA_CODE_RATE_CPS / FFT_SIZE;

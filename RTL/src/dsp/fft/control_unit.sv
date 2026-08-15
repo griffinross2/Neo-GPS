@@ -5,6 +5,7 @@ module control_unit (
     
     input logic start,
     input logic data_ready,
+    input logic stop_output,
     output logic done,
     
     output logic [1:0] mem_wsrc,
@@ -134,10 +135,9 @@ always_comb begin
                 next_stage_counter = stage_counter + 1;
                 if (span[11]) begin
                     // Done
-                    mem_addr = '0;
-                    next_addr_counter = 1;
-                    next_state = OUTPUT;
                     next_done = 1'b1;
+                    next_addr_counter = 0;
+                    next_state = OUTPUT;
                 end
             end
         end
@@ -145,7 +145,7 @@ always_comb begin
             mem_addr = addr_counter;
             next_addr_counter = addr_counter + 1;
 
-            if (&addr_counter) begin
+            if (&addr_counter | stop_output) begin
                 next_state = IDLE;
             end
         end
