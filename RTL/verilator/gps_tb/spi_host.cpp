@@ -7,9 +7,9 @@ int spi_bit_counter = 0;
 int spi_clock_counter = 0;
 constexpr int SPI_CLOCK_DIVIDER = 1000;
 bool read_write = false; // false for write, true for read
-uint8_t spi_wdata = 0;
-uint8_t spi_rdata = 0;
-uint8_t spi_addr = 0;
+uint16_t spi_wdata = 0;
+uint16_t spi_rdata = 0;
+uint16_t spi_addr = 0;
 
 typedef enum
 {
@@ -29,7 +29,7 @@ void spi_init(Vgps_tb *const top)
     top->gps_tb->sdi = 0;
 }
 
-void spi_write(Vgps_tb *const top, uint8_t addr, uint8_t data)
+void spi_write(Vgps_tb *const top, uint16_t addr, uint16_t data)
 {
     spi_wdata = data;
     spi_addr = addr;
@@ -39,7 +39,7 @@ void spi_write(Vgps_tb *const top, uint8_t addr, uint8_t data)
     top->gps_tb->sdi = 0; // Send read/write bit first
 }
 
-void spi_read(Vgps_tb *const top, uint8_t addr)
+void spi_read(Vgps_tb *const top, uint16_t addr)
 {
     spi_addr = addr;
     spi_state = SPI_ADDR;
@@ -64,10 +64,10 @@ void spi_task(Vgps_tb *const top)
 
             if (top->gps_tb->sck == 0)
             {
-                top->gps_tb->sdi = (spi_addr >> (6 - spi_bit_counter)) & 0x1; // Send address bit
+                top->gps_tb->sdi = (spi_addr >> (14 - spi_bit_counter)) & 0x1; // Send address bit
                 spi_bit_counter++;
 
-                if (spi_bit_counter > 6)
+                if (spi_bit_counter > 14)
                 {
                     spi_bit_counter = 0;
                     spi_state = SPI_DATA;
@@ -89,10 +89,10 @@ void spi_task(Vgps_tb *const top)
             if (!read_write && top->gps_tb->sck == 0)
             {
                 // Write bits at each negedge
-                top->gps_tb->sdi = (spi_wdata >> (7 - spi_bit_counter)) & 0x1; // Send data bit
+                top->gps_tb->sdi = (spi_wdata >> (15 - spi_bit_counter)) & 0x1; // Send data bit
                 spi_bit_counter++;
 
-                if (spi_bit_counter > 7)
+                if (spi_bit_counter > 15)
                 {
                     spi_bit_counter = 0;
                     spi_state = SPI_CS_TIME;
@@ -105,7 +105,7 @@ void spi_task(Vgps_tb *const top)
                 spi_rdata = (spi_rdata << 1) | top->gps_tb->sdo; // Read data bit
                 spi_bit_counter++;
 
-                if (spi_bit_counter > 8)
+                if (spi_bit_counter > 16)
                 {
                     spi_bit_counter = 0;
                     spi_state = SPI_CS_TIME;
@@ -149,6 +149,8 @@ void spi_task(Vgps_tb *const top)
         {
             spi_clock_counter++;
         }
+
+        break;
     }
 }
 
@@ -157,7 +159,7 @@ bool spi_is_idle()
     return spi_state == SPI_IDLE;
 }
 
-uint8_t spi_get_read_data()
+uint16_t spi_get_read_data()
 {
     return spi_rdata;
 }

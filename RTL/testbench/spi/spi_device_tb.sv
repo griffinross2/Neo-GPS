@@ -3,9 +3,9 @@
 module spi_device_tb (
 );
     logic clk, nrst;
-    logic [7:0] data_in;
-    logic [7:0] data_out;
-    logic [6:0] addr_out;
+    logic [15:0] data_in;
+    logic [15:0] data_out;
+    logic [14:0] addr_out;
     logic read;
     logic write;
     logic sck;
@@ -53,14 +53,14 @@ module spi_device_tb (
     endtask
 
     task send_spi_data(
-        input logic [7:0] data,
+        input logic [15:0] data,
         input logic keep_cs,
         integer bit_counter = 0
     );
         cs = 0;
-        for (bit_counter = 0; bit_counter < 8; bit_counter = bit_counter + 1) begin
+        for (bit_counter = 0; bit_counter < 16; bit_counter = bit_counter + 1) begin
             sck_en = 1;
-            sdi = data[7 - bit_counter];
+            sdi = data[15 - bit_counter];
             @(negedge sck);
         end
         if (!keep_cs) begin
@@ -78,21 +78,21 @@ module spi_device_tb (
         @(negedge sck);
         @(negedge sck);
 
-        // Read from 0x25
-        send_spi_data(8'hA5, 1);
-        send_spi_data(8'h00, 0);
+        // Read from 0x2513
+        send_spi_data(16'hA513, 1);
+        send_spi_data(16'h0000, 0);
 
-        // Write from 0x31
-        send_spi_data(8'h31, 1);
-        send_spi_data(8'h67, 0);
+        // Write to 0x3162
+        send_spi_data(16'h3162, 1);
+        send_spi_data(16'h67F3, 0);
 
-        // Read from 0x74
-        send_spi_data(8'hF4, 1);
-        send_spi_data(8'h00, 0);
+        // Read from 0x7492
+        send_spi_data(16'hF492, 1);
+        send_spi_data(16'h0000, 0);
 
-        // Write from 0x39
-        send_spi_data(8'h39, 1);
-        send_spi_data(8'h18, 0);
+        // Write to 0x395A
+        send_spi_data(16'h395A, 1);
+        send_spi_data(16'h1862, 0);
 
         @(negedge sck);
         @(negedge sck);

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <format>
+#include <csignal>
 
 // Include model header, generated from Verilating "top.v"
 #include "Vgps_tb.h"
@@ -15,8 +16,16 @@ double sc_time_stamp()
     return 0;
 }
 
+bool killed = false;
+
+void sigint_handler(int signal)
+{
+    killed = true;
+}
+
 int main(int argc, char **argv)
 {
+    std::signal(SIGINT, sigint_handler);
     // See a similar example walkthrough in the verilator manpage.
 
     // This is intended to be a minimal example.  Before copying this to start a
@@ -45,10 +54,10 @@ int main(int argc, char **argv)
     top->trace(tfp, 99);
     tfp->open(outpath.c_str());
 
-    test_program_init(top);
+    test_program_init(contextp, top);
 
     // Simulate until $finish
-    while (!contextp->gotFinish())
+    while (!contextp->gotFinish() && !killed)
     {
         contextp->timeInc(1);
 

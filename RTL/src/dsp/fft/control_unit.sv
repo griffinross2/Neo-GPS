@@ -135,13 +135,13 @@ always_comb begin
                 next_stage_counter = stage_counter + 1;
                 if (span[11]) begin
                     // Done
-                    next_done = 1'b1;
                     next_addr_counter = 0;
                     next_state = OUTPUT;
                 end
             end
         end
         OUTPUT: begin
+            next_done = 1'b1;
             mem_addr = addr_counter;
             next_addr_counter = addr_counter + 1;
 

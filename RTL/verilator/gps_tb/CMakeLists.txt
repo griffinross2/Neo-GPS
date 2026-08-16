@@ -7,8 +7,12 @@ add_executable(gps_tb
 
 set(RTL_SOURCES
     ../../testbench/top/gps_tb.sv
+    ../../src/gps/gps_top.sv
     ../../src/spi/spi_device.sv
     ../../src/gps/l1ca_ac_pca_search.sv
+    ../../src/gps/l1ca_channel.sv
+    ../../src/gps/l1ca_search_unit.sv
+    ../../src/gps/l1ca_channel_unit.sv
     ../../src/gps/l1ca_code.sv
     ../../src/dsp/fft/fft_4096.sv
     ../../src/dsp/fft/butterfly_unit.sv

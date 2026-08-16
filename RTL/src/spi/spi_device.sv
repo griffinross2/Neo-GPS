@@ -3,7 +3,7 @@
 // Multi-address reads/writes are NOT allowed
 
 module spi_device #(
-    parameter DATA_WIDTH = 8
+    parameter DATA_WIDTH = 16
 ) (
     input  logic                    clk,        // Clock signal
     input  logic                    nrst,       // Active low reset
@@ -12,7 +12,7 @@ module spi_device #(
     output logic [DATA_WIDTH-2:0]   addr_out,   // Address output (to select data)
     output logic                    read,       // Read register data
     output logic                    write,      // Read register data
-    output logic                    sck,        // SPI clock
+    input  logic                    sck,        // SPI clock
     input  logic                    sdi,        // Serial data in
     output logic                    sdo,        // Serial data out
     input  logic                    cs          // Chip select (active low)

@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 
-`include "common_gnss_types.vh"
-import common_gnss_types_pkg::*;
+`include "common_types.vh"
+import common_types_pkg::*;
 
 module l1ca_channel (
     input logic clk, nrst,                      // Clock and reset
@@ -27,10 +27,6 @@ module l1ca_channel (
     channel_state_t state, next_state;
 
     logic code_epoch, epoch_reg;
-    logic [9:0] code_index_reg;
-    logic [4:0] start_index_reg;
-
-    sv_t sv_reg, next_sv;
 
     acc_t next_ie, next_qe; // Next state for accumulators
     acc_t next_ip, next_qp; // Next state for accumulators
@@ -61,9 +57,6 @@ module l1ca_channel (
             code_prompt <= '0;
             code_late <= '0;
             epoch_reg <= '0;
-            sv_reg <= '0;
-            code_index_reg <= '0;
-            start_index_reg <= '0;
             state <= IDLE;
             code_phase <= '0;
             lo_phase <= '0;
@@ -78,13 +71,6 @@ module l1ca_channel (
             code_late <= next_code_late;
             code_prompt <= next_code_prompt;
             epoch_reg <= code_epoch;
-            sv_reg <= next_sv;
-            if (start) begin
-                code_index_reg <= code_index;
-            end else begin
-                code_index_reg <= code_index_reg;
-            end
-            start_index_reg <= start ? start_index : start_index_reg;
             state <= next_state;
             code_phase <= next_code_phase[31:0];
             lo_phase <= next_lo_phase;
@@ -124,11 +110,10 @@ module l1ca_channel (
         next_ql = ql;
         next_code_prompt = code_prompt;
         next_code_late = code_late;
-        next_sv = sv_reg;
         next_pause_delay_reg = pause_delay_reg;
 
         if (pause) begin
-            next_pause_delay_reg = pause_delay
+            next_pause_delay_reg = pause_delay;
         end else begin
             if (pause_delay_reg != 0) begin
                 next_pause_delay_reg = pause_delay_reg - 16'd1;
@@ -251,7 +236,7 @@ module l1ca_channel (
         .nrst(nrst),
         .en(code_strobe),
         .clear(state == IDLE),
-        .sv(sv_reg),
+        .sv(sv),
         .code(code_early),
         .epoch(code_epoch),
         .chip(chip)
