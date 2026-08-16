@@ -1,13 +1,21 @@
 # Create a new executable target that will contain all your sources
 add_executable(gps_tb
     sim_main.cpp
+    sim_sched.cpp
     spi_host.cpp
     test_program.cpp
+    filters.cpp
+    track_l1ca.cpp
+    tools.cpp
+    ephm_l1ca.cpp
 )
+
+find_package(Threads REQUIRED)
+target_link_libraries(gps_tb PRIVATE Threads::Threads)
 
 set(RTL_SOURCES
     ../../testbench/top/gps_tb.sv
-    ../../src/gps/gps_top.sv
+    ../../src/gps/gps.sv
     ../../src/spi/spi_device.sv
     ../../src/gps/l1ca_ac_pca_search.sv
     ../../src/gps/l1ca_channel.sv

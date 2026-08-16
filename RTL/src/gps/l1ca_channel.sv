@@ -46,7 +46,7 @@ module l1ca_channel (
 
     logic [15:0] pause_delay_reg, next_pause_delay_reg; // Pause delay register
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk, negedge nrst) begin
         if (~nrst) begin
             ip <= '0;
             qp <= '0;
@@ -194,12 +194,12 @@ module l1ca_channel (
                 end
 
                 // Accumulate in-phase and quadrature components
-                next_ie = ie + (die ? 16'd1 : -16'd1);
-                next_qe = qe + (dqe ? 16'd1 : -16'd1);
-                next_ip = ip + (dip ? 16'd1 : -16'd1);
-                next_qp = qp + (dqp ? 16'd1 : -16'd1);
-                next_il = il + (dil ? 16'd1 : -16'd1);
-                next_ql = ql + (dql ? 16'd1 : -16'd1);
+                next_ie = ie + (die ? 32'd1 : -32'd1);
+                next_qe = qe + (dqe ? 32'd1 : -32'd1);
+                next_ip = ip + (dip ? 32'd1 : -32'd1);
+                next_qp = qp + (dqp ? 32'd1 : -32'd1);
+                next_il = il + (dil ? 32'd1 : -32'd1);
+                next_ql = ql + (dql ? 32'd1 : -32'd1);
 
                 // On rising edge of epoch, clear the accumulators
                 if (code_epoch & ~epoch_reg) begin
@@ -227,7 +227,7 @@ module l1ca_channel (
         end
 
         // Rising edge of code epoch, assert epoch output
-        epoch = code_epoch & ~epoch_reg;
+        epoch = (state == ACTIVE) & ~pause & code_epoch & ~epoch_reg;
     end
 
     // Code generator

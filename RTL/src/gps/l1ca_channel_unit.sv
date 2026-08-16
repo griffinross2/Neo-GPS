@@ -19,6 +19,10 @@ module l1ca_channel_unit # (
 
     sv_t ch_sv, next_ch_sv; // SV number for channel
     logic ch_epoch; // Epoch signal from channel
+    logic ch_epoch_reg_gps, next_ch_epoch_reg_gps; // Register the epoch signal in the GPS clock domain
+    logic [1:0] ch_epoch_sync_clk; // Sync the epoch signal to the core clock domain
+    logic ch_epoch_clear_clk, next_ch_epoch_clear_clk; // Clear the epoch signal in the core clock domain
+    logic [1:0] ch_epoch_clear_sync_gps; // Sync the clear signal to the GPS clock domain
     logic ch_clear, next_ch_clear; // Clear channel
     logic [31:0] ch_code_rate_gps, next_ch_code_rate_gps, ch_lo_rate_gps, next_ch_lo_rate_gps; // Code and local oscillator rates in GPS clock domain
     logic [31:0] ch_code_rate_clk, next_ch_code_rate_clk, ch_lo_rate_clk, next_ch_lo_rate_clk; // Code and local oscillator rates in core clock domain
@@ -66,16 +70,12 @@ module l1ca_channel_unit # (
             ch_pause_clk <= '0;
             ch_pause_delay <= '0;
             ch_pause_ack_clk <= '0;
-            ch_ie_reg <= '0;
-            ch_qe_reg <= '0;
-            ch_ip_reg <= '0;
-            ch_qp_reg <= '0;
-            ch_il_reg <= '0;
-            ch_ql_reg <= '0;
             ch_code_rate_done_clk <= '0;
             ch_lo_rate_done_clk <= '0;
             ch_code_rate_ack_clk <= '0;
             ch_lo_rate_ack_clk <= '0;
+            ch_epoch_sync_clk <= '0;
+            ch_epoch_clear_clk <= '0;
         end else begin
             ch_code_rate_clk <= next_ch_code_rate_clk;
             ch_lo_rate_clk <= next_ch_lo_rate_clk;
@@ -84,16 +84,12 @@ module l1ca_channel_unit # (
             ch_pause_clk <= next_ch_pause_clk;
             ch_pause_delay <= next_ch_pause_delay;
             ch_pause_ack_clk <= {ch_pause_ack_clk[0], &ch_pause_sync_gps};
-            ch_ie_reg <= ch_epoch ? ch_ie : ch_ie_reg;
-            ch_qe_reg <= ch_epoch ? ch_qe : ch_qe_reg;
-            ch_ip_reg <= ch_epoch ? ch_ip : ch_ip_reg;
-            ch_qp_reg <= ch_epoch ? ch_qp : ch_qp_reg;
-            ch_il_reg <= ch_epoch ? ch_il : ch_il_reg;
-            ch_ql_reg <= ch_epoch ? ch_ql : ch_ql_reg;
             ch_code_rate_done_clk <= next_ch_code_rate_done_clk;
             ch_lo_rate_done_clk <= next_ch_lo_rate_done_clk;
             ch_code_rate_ack_clk <= {ch_code_rate_ack_clk[0], &ch_code_rate_sync_gps};
             ch_lo_rate_ack_clk <= {ch_lo_rate_ack_clk[0], &ch_lo_rate_sync_gps};
+            ch_epoch_sync_clk <= {ch_epoch_sync_clk[0], ch_epoch_reg_gps};
+            ch_epoch_clear_clk <= next_ch_epoch_clear_clk;
         end
     end
 
@@ -104,12 +100,28 @@ module l1ca_channel_unit # (
             ch_lo_rate_sync_gps <= '0;
             ch_code_rate_gps <= 32'd228841226;
             ch_lo_rate_gps <= 32'd899258778;
+            ch_epoch_reg_gps <= '0;
+            ch_epoch_clear_sync_gps <= '0;
+            ch_ie_reg <= '0;
+            ch_qe_reg <= '0;
+            ch_ip_reg <= '0;
+            ch_qp_reg <= '0;
+            ch_il_reg <= '0;
+            ch_ql_reg <= '0;
         end else begin
             ch_pause_sync_gps <= {ch_pause_sync_gps[2:0], ch_pause_clk};
             ch_code_rate_sync_gps <= {ch_code_rate_sync_gps[0], ch_code_rate_done_clk};
             ch_lo_rate_sync_gps <= {ch_lo_rate_sync_gps[0], ch_lo_rate_done_clk};
             ch_code_rate_gps <= next_ch_code_rate_gps;
             ch_lo_rate_gps <= next_ch_lo_rate_gps;
+            ch_epoch_reg_gps <= next_ch_epoch_reg_gps;
+            ch_epoch_clear_sync_gps <= {ch_epoch_clear_sync_gps[0], ch_epoch_clear_clk};
+            ch_ie_reg <= ch_epoch ? ch_ie : ch_ie_reg;
+            ch_qe_reg <= ch_epoch ? ch_qe : ch_qe_reg;
+            ch_ip_reg <= ch_epoch ? ch_ip : ch_ip_reg;
+            ch_qp_reg <= ch_epoch ? ch_qp : ch_qp_reg;
+            ch_il_reg <= ch_epoch ? ch_il : ch_il_reg;
+            ch_ql_reg <= ch_epoch ? ch_ql : ch_ql_reg;
         end
     end
 
@@ -125,14 +137,32 @@ module l1ca_channel_unit # (
         next_ch_lo_rate_done_clk = ch_lo_rate_done_clk;
         next_ch_code_rate_gps = ch_code_rate_gps;
         next_ch_lo_rate_gps = ch_lo_rate_gps;
+        next_ch_epoch_clear_clk = ch_epoch_clear_clk;
+        next_ch_epoch_reg_gps = ch_epoch_reg_gps;
+
+        if (~|ch_epoch_sync_clk) begin
+            next_ch_epoch_clear_clk = 1'b0;
+        end
+
+        if (&ch_epoch_clear_sync_gps) begin
+            next_ch_epoch_reg_gps = 1'b0;
+        end
+
+        if (ch_epoch) begin
+            next_ch_epoch_reg_gps = 1'b1;
+        end
 
         case (spi_addr_out)
             // channel control register
             (REG_OFFSET): begin
-                spi_data_in = {ch_clear, ch_epoch, 8'b0, ch_sv};
+                spi_data_in = {&ch_epoch_sync_clk, ch_clear, 8'b0, ch_sv};
                 if (spi_write) begin
-                    next_ch_clear = spi_data_out[15];
+                    next_ch_clear = spi_data_out[14];
                     next_ch_sv = spi_data_out[5:0];
+                end
+                if (spi_read) begin
+                    // Clear epoch signal on read
+                    next_ch_epoch_clear_clk = 1'b1;
                 end
             end
 

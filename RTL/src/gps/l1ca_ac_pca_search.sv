@@ -14,7 +14,7 @@
 `include "common_types.vh"
 import common_types_pkg::*;
 
-// From start asserted to busy deasserted: 
+// From start asserted to busy deasserted: WRONG TODO CHANGE
 //      - 55896755 clocks
 //      - 2.911289551 seconds at 19.2 MHz
 module l1ca_ac_pca_search (

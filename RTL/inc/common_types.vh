@@ -8,7 +8,7 @@ package common_types_pkg;
     parameter IF_RATE = 4020000;                // GPS L1 C/A frequency
     parameter GPS_L1CA_FREQ = 1575420000;       // GPS L1 C/A frequency
 
-    parameter ACC_W = 16;                       // Accumulator width
+    parameter ACC_W = 32;                       // Accumulator width
 
     typedef logic [5:0] sv_t;                   // SV number type
     typedef logic [10:1] l1ca_lfsr_t;           // LFSR type for G1 and G2

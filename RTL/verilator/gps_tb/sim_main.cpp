@@ -9,6 +9,8 @@
 // Include model header, generated from Verilating "top.v"
 #include "Vgps_tb.h"
 
+#include "sim_sched.h"
+#include "spi_host.h"
 #include "test_program.h"
 
 double sc_time_stamp()
@@ -56,12 +58,15 @@ int main(int argc, char **argv)
 
     test_program_init(contextp, top);
 
-    // Simulate until $finish
-    while (!contextp->gotFinish() && !killed)
+    // Simulate until $finish, Ctrl-C, or the test program returning
+    while (!contextp->gotFinish() && !killed && !sim_done())
     {
         contextp->timeInc(1);
 
-        test_program_task(contextp, top);
+        // Device models tick every cycle; the test program is only resumed once
+        // whatever it is blocked on has happened.
+        spi_task(top);
+        sim_service();
 
         // Evaluate model
         top->eval();
@@ -82,6 +87,9 @@ int main(int argc, char **argv)
             std::cout << "Simulation time: " << (contextp->time() / 1000000) << " ms" << std::endl;
         }
     }
+
+    // Unwind the test program thread before tearing the model down
+    sim_shutdown();
 
     // Final model cleanup
     top->final();

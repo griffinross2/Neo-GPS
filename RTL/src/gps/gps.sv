@@ -3,7 +3,7 @@
 `include "common_types.vh"
 import common_types_pkg::*;
 
-module gps_top (
+module gps (
     input logic gps_clk, core_clk, nrst,
     input logic signal_in,
     input logic sck,

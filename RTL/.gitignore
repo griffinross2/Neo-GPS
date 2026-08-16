@@ -4,3 +4,4 @@ vivado/
 *.hex
 *.bin
 !src/**/*.hex
+*.csv

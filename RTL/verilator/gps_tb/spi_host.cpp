@@ -2,10 +2,11 @@
 #include "Vgps_tb_gps_tb.h"
 
 #include "spi_host.h"
+#include "sim_sched.h"
 
 int spi_bit_counter = 0;
 int spi_clock_counter = 0;
-constexpr int SPI_CLOCK_DIVIDER = 1000;
+constexpr int SPI_CLOCK_DIVIDER = 250;
 bool read_write = false; // false for write, true for read
 uint16_t spi_wdata = 0;
 uint16_t spi_rdata = 0;
@@ -29,7 +30,8 @@ void spi_init(Vgps_tb *const top)
     top->gps_tb->sdi = 0;
 }
 
-void spi_write(Vgps_tb *const top, uint16_t addr, uint16_t data)
+// Kick off a transaction. spi_task() carries it out over the following ticks.
+static void spi_start_write(Vgps_tb *const top, uint16_t addr, uint16_t data)
 {
     spi_wdata = data;
     spi_addr = addr;
@@ -39,7 +41,7 @@ void spi_write(Vgps_tb *const top, uint16_t addr, uint16_t data)
     top->gps_tb->sdi = 0; // Send read/write bit first
 }
 
-void spi_read(Vgps_tb *const top, uint16_t addr)
+static void spi_start_read(Vgps_tb *const top, uint16_t addr)
 {
     spi_addr = addr;
     spi_state = SPI_ADDR;
@@ -143,6 +145,7 @@ void spi_task(Vgps_tb *const top)
         if (spi_clock_counter >= 2 * SPI_CLOCK_DIVIDER - 1)
         {
             spi_bit_counter = 0;
+            spi_clock_counter = 0;
             spi_state = SPI_IDLE;
         }
         else
@@ -154,12 +157,22 @@ void spi_task(Vgps_tb *const top)
     }
 }
 
-bool spi_is_idle()
+static bool spi_is_idle()
 {
     return spi_state == SPI_IDLE;
 }
 
-uint16_t spi_get_read_data()
+void spi_write(Vgps_tb *const top, uint16_t addr, uint16_t data)
 {
+    spi_start_write(top, addr, data);
+    sim_wait([]
+             { return spi_is_idle(); });
+}
+
+uint16_t spi_read(Vgps_tb *const top, uint16_t addr)
+{
+    spi_start_read(top, addr);
+    sim_wait([]
+             { return spi_is_idle(); });
     return spi_rdata;
 }

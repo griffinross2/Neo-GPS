@@ -13,7 +13,7 @@ module gps_tb (
     logic sdo /*verilator public*/;
     logic cs /*verilator public*/;
 
-    gps_top dut (
+    gps dut (
         .gps_clk(gps_clk),
         .core_clk(core_clk),
         .nrst(nrst),
@@ -27,7 +27,7 @@ module gps_tb (
     // Clock generation
     initial begin
         gps_clk = 0;
-        forever #26.041666667 gps_clk = ~gps_clk;
+        forever #26 gps_clk = ~gps_clk;
     end
 
     initial begin
@@ -85,8 +85,6 @@ module gps_tb (
             wait (dut.search_unit_0.search_busy == 1'b0);
 
             $display("Finished search: %.2f ns", $realtime());
-
-            #10ms $finish; // End simulation
         end
 
         join
