@@ -1,0 +1,4 @@
+dependencies:
+  espressif/esp-idf-cxx: 
+    version: '*'
+    pre_release: true

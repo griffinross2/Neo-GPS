@@ -347,7 +347,6 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
     carrier_rate = (fc + carrier_error) / fs * 4294967296.0;
     carrier_aiding_smoothed += carrier_aiding_alpha * (carrier_error * CHIP_RATE / FREQ_L1CA - carrier_aiding_smoothed);
     code_rate = (CHIP_RATE + code_error + carrier_aiding_smoothed) / fs * 4294967296.0;
-    printf("%.3f, %.3f\n", carrier_rate, code_rate);
     // code_rate = (CHIP_RATE + code_error) / fs  * 4294967296.0;
 
     // Bit sync and bit recovery

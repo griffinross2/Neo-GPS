@@ -124,7 +124,7 @@ static void test_program_body(Vgps_tb *const top)
     {
     } // Wait and ditch first epoch
 
-    for (int i = 0; i < 10000; i++)
+    for (int i = 0; i < 30000; i++)
     {
         while ((spi_read(top, 0x0020) & 0x8000) == 0)
         {
@@ -138,8 +138,8 @@ static void test_program_body(Vgps_tb *const top)
         int32_t il = get_il(top);
         int32_t ql = get_ql(top);
 
-        std::cout << "Epoch " << i << " at time " << sim_time() << std::endl;
-        std::cout << "I: " << ip << ", Q: " << qp << ", I_E: " << ie << ", Q_E: " << qe << ", I_L: " << il << ", Q_L: " << ql << std::endl;
+        // std::cout << "Epoch " << i << " at time " << sim_time() << std::endl;
+        // std::cout << "I: " << ip << ", Q: " << qp << ", I_E: " << ie << ", Q_E: " << qe << ", I_L: " << il << ", Q_L: " << ql << std::endl;
 
         ch0_track->update_epoch(ip, qp, ie, qe, il, ql);
         uint32_t code_rate = ch0_track->get_code_rate();
@@ -149,7 +149,7 @@ static void test_program_body(Vgps_tb *const top)
         spi_write(top, 0x0024, carrier_rate & 0xFFFF);         // Write carrier rate (lower)
         spi_write(top, 0x0025, (carrier_rate >> 16) & 0xFFFF); // Write carrier rate (upper)
 
-        std::cout << "C/N0: " << ch0_track->get_cn0() << " dB-Hz" << std::endl;
+        // std::cout << "C/N0: " << ch0_track->get_cn0() << " dB-Hz" << std::endl;
     }
 }
 

@@ -111,6 +111,7 @@ module l1ca_channel (
         next_code_prompt = code_prompt;
         next_code_late = code_late;
         next_pause_delay_reg = pause_delay_reg;
+        next_code_phase = {1'b0, code_phase};
 
         if (pause) begin
             next_pause_delay_reg = pause_delay;
