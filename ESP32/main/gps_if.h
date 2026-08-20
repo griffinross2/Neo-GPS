@@ -42,8 +42,18 @@ void gps_if_clear_channel(uint8_t channel);
 void gps_if_set_channel_sv(uint8_t channel, uint8_t sv);
 void gps_if_start_search(uint8_t search, uint8_t channel, uint8_t sv);
 bool gps_if_search_done(uint8_t search);
-uint32_t gps_if_accumulator(uint8_t search);
-double gps_if_code(uint8_t search);
-double gps_if_doppler(uint8_t search);
+uint32_t gps_if_search_accumulator(uint8_t search);
+double gps_if_search_code(uint8_t search);
+double gps_if_search_doppler(uint8_t search);
+int32_t gps_if_channel_ip(uint8_t channel);
+int32_t gps_if_channel_qp(uint8_t channel);
+int32_t gps_if_channel_ie(uint8_t channel);
+int32_t gps_if_channel_qe(uint8_t channel);
+int32_t gps_if_channel_il(uint8_t channel);
+int32_t gps_if_channel_ql(uint8_t channel);
+void gps_if_set_channel_code_rate(uint8_t channel, uint32_t code_rate);
+void gps_if_set_channel_lo_rate(uint8_t channel, uint32_t lo_rate);
+bool gps_if_channel_is_epoch(uint8_t channel);
+void gps_if_channel_pause(uint8_t channel, uint16_t pause);
 
 #endif // GPS_IF_H

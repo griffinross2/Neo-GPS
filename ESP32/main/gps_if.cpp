@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <memory.h>
+#include <bit>
 
 constexpr gpio_num_t GPS_CS_PIN = GPIO_NUM_10;
 constexpr gpio_num_t GPS_CLK_PIN = GPIO_NUM_12;
@@ -97,7 +98,7 @@ void gps_if_start_search(uint8_t search, uint8_t channel, uint8_t sv)
     gps_if_spi_write(GPS_SEARCH_OFFSET[search] + GPS_SEARCH_CONTROL, 0x4000 | ((channel & 0x3F) << 6) | (sv & 0x3F));
 }
 
-uint32_t gps_if_accumulator(uint8_t search)
+uint32_t gps_if_search_accumulator(uint8_t search)
 {
     uint32_t acc_low = gps_if_spi_read(GPS_SEARCH_OFFSET[search] + GPS_SEARCH_ACC_LOW);
     uint32_t acc_high = gps_if_spi_read(GPS_SEARCH_OFFSET[search] + GPS_SEARCH_ACC_HIGH);
@@ -105,7 +106,7 @@ uint32_t gps_if_accumulator(uint8_t search)
     return (acc_high << 16) | acc_low;
 }
 
-double gps_if_code(uint8_t search)
+double gps_if_search_code(uint8_t search)
 {
     uint16_t code_data = gps_if_spi_read(GPS_SEARCH_OFFSET[search] + GPS_SEARCH_CODE_START);
     double code = (double)(code_data & 0x3FF);
@@ -114,7 +115,7 @@ double gps_if_code(uint8_t search)
     return code;
 }
 
-double gps_if_doppler(uint8_t search)
+double gps_if_search_doppler(uint8_t search)
 {
     uint16_t dop_data = gps_if_spi_read(GPS_SEARCH_OFFSET[search] + GPS_SEARCH_DOPPLER);
     uint16_t doppler_sign = ((dop_data >> 5) & 0x1);
@@ -132,4 +133,80 @@ bool gps_if_search_done(uint8_t search)
         return false;
     }
     return true;
+}
+
+int32_t gps_if_channel_ip(uint8_t channel)
+{
+    uint32_t ip_lower = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_IP_LOW);
+    uint32_t ip_upper = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_IP_HIGH);
+    int32_t ip = std::bit_cast<int32_t>(ip_lower | (ip_upper << 16));
+    return ip;
+}
+
+int32_t gps_if_channel_qp(uint8_t channel)
+{
+    uint32_t qp_lower = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_QP_LOW);
+    uint32_t qp_upper = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_QP_HIGH);
+    int32_t qp = std::bit_cast<int32_t>(qp_lower | (qp_upper << 16));
+    return qp;
+}
+
+int32_t gps_if_channel_ie(uint8_t channel)
+{
+    uint32_t ie_lower = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_IE_LOW);
+    uint32_t ie_upper = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_IE_HIGH);
+    int32_t ie = std::bit_cast<int32_t>(ie_lower | (ie_upper << 16));
+    return ie;
+}
+
+int32_t gps_if_channel_qe(uint8_t channel)
+{
+    uint32_t qe_lower = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_QE_LOW);
+    uint32_t qe_upper = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_QE_HIGH);
+    int32_t qe = std::bit_cast<int32_t>(qe_lower | (qe_upper << 16));
+    return qe;
+}
+
+int32_t gps_if_channel_il(uint8_t channel)
+{
+    uint32_t il_lower = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_IL_LOW);
+    uint32_t il_upper = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_IL_HIGH);
+    int32_t il = std::bit_cast<int32_t>(il_lower | (il_upper << 16));
+    return il;
+}
+
+int32_t gps_if_channel_ql(uint8_t channel)
+{
+    uint32_t ql_lower = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_QL_LOW);
+    uint32_t ql_upper = (uint32_t)gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_QL_HIGH);
+    int32_t ql = std::bit_cast<int32_t>(ql_lower | (ql_upper << 16));
+    return ql;
+}
+
+void gps_if_set_channel_code_rate(uint8_t channel, uint32_t code_rate)
+{
+    gps_if_spi_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CODE_RATE_LOW, (uint16_t)(code_rate & 0xFFFF));
+    gps_if_spi_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CODE_RATE_HIGH, (uint16_t)((code_rate >> 16) & 0xFFFF));
+}
+
+void gps_if_set_channel_lo_rate(uint8_t channel, uint32_t lo_rate)
+{
+    gps_if_spi_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_LO_RATE_LOW, (uint16_t)(lo_rate & 0xFFFF));
+    gps_if_spi_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_LO_RATE_HIGH, (uint16_t)((lo_rate >> 16) & 0xFFFF));
+}
+
+bool gps_if_channel_is_epoch(uint8_t channel)
+{
+
+    uint16_t status = gps_if_spi_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CONTROL);
+    if (status & 0x8000)
+    {
+        return true;
+    }
+    return false;
+}
+
+void gps_if_channel_pause(uint8_t channel, uint16_t pause)
+{
+    gps_if_spi_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_PAUSE, pause);
 }
