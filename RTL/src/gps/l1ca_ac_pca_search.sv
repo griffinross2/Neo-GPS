@@ -11,7 +11,9 @@
 /*                        doi: 10.1109/MWSCAS.2001.986334.                            */
 /**************************************************************************************/
 
+`ifdef VIVADO
 `include "common_types.vh"
+`endif
 import common_types_pkg::*;
 
 // From start asserted to busy deasserted: WRONG TODO CHANGE

@@ -4,9 +4,6 @@ module gps_top (
     input CLK, ck_rst,
     output LED [0:3],
     input BTN[0:3],
-    input ja_0,
-    output ja_2,
-    inout ja_1, ja_3, ja_4, ja_6, ja_7,
     input jb_0, jb_1, jb_2, jb_3, jb_6,
     output jb_4, jb_5, jb_7,
     input ck_io3, ck_io4, ck_io5, 
@@ -46,6 +43,7 @@ module gps_top (
     wire clkfb_out, clkfb_in;
     wire core_clk_unbuf;
 
+    // core_clk = 50 MHz, input CLK = 100 MHz
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
         .CLKIN1_PERIOD(10.000),

@@ -36,6 +36,7 @@
     add_files -fileset sources_1 [ glob ../src/gps/l1ca_code.sv ]
 
     set_property include_dirs ../inc [current_fileset]
+    set_property verilog_define {VIVADO} [current_fileset]
 
     check_syntax -fileset sources_1
 

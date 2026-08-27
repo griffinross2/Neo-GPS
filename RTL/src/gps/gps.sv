@@ -1,6 +1,8 @@
 `timescale 1ns/1ns
 
+`ifdef VIVADO
 `include "common_types.vh"
+`endif
 import common_types_pkg::*;
 
 module gps (
