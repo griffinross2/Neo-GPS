@@ -27,7 +27,7 @@ static void gps_if_spi_write(uint16_t reg, uint16_t data)
     t.tx_buffer = &tx_data;
     t.rx_buffer = &rx_dummy;
 
-    spi_device_transmit(s_gps_if_spi_handle, &t);
+    spi_device_polling_transmit(s_gps_if_spi_handle, &t);
 }
 
 uint16_t gps_if_spi_read(uint16_t reg)
@@ -42,7 +42,7 @@ uint16_t gps_if_spi_read(uint16_t reg)
     t.tx_buffer = &tx_dummy;
     t.rx_buffer = &rx_data;
 
-    spi_device_transmit(s_gps_if_spi_handle, &t);
+    spi_device_polling_transmit(s_gps_if_spi_handle, &t);
 
     return ((uint16_t)rx_data[0] << 8) | rx_data[1];
 }
@@ -71,12 +71,13 @@ int gps_if_init()
     memset(&devcfg, 0, sizeof(devcfg));
     devcfg.address_bits = 16;
     devcfg.mode = 0;
-    devcfg.clock_speed_hz = 5000000; // 5 MHz
+    devcfg.clock_speed_hz = 8000000;
     devcfg.spics_io_num = GPS_CS_PIN;
     devcfg.queue_size = 1;
 
     spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_DISABLED);
     spi_bus_add_device(SPI2_HOST, &devcfg, &s_gps_if_spi_handle);
+    spi_device_acquire_bus(s_gps_if_spi_handle, portMAX_DELAY);
 
     return 0;
 }

@@ -31,6 +31,8 @@ void app_main(void)
     uint8_t sv;
     int64_t start_time = 0;
     uint32_t acc = 0;
+    double code = 0;
+    double doppler = 0;
 
     for (sv = 0; sv <= 31; sv++)
     {
@@ -47,6 +49,10 @@ void app_main(void)
         }
 
         acc = gps_if_search_accumulator(0);
+        code = gps_if_search_code(0);
+        doppler = gps_if_search_doppler(0);
+
+        printf("Tracking SV%d: Accumulator = %lu, Code = %0.1f, Doppler = %0.0f\n", sv + 1, acc, code, doppler);
 
         if (acc > 25000)
         {
@@ -56,11 +62,6 @@ void app_main(void)
 
     if (sv <= 31)
     {
-        double code = gps_if_search_code(0);
-        double doppler = gps_if_search_doppler(0);
-
-        printf("Tracking SV%d: Accumulator = %lu, Code = %0.1f, Doppler = %0.0f\n", sv + 1, acc, code, doppler);
-
         double elapsed_time_s = (esp_timer_get_time() - start_time) / 1000000.0;
 
         // Represents the amount of chips by which the signal is advanced relative to the code
