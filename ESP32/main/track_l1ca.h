@@ -26,6 +26,7 @@ public:
     double get_clock_correction(double t);
     bool ready_to_solve();
     double get_cn0() { return cn0; }
+    double get_cn0_smoothed() { return cn0_smoothed; }
     int get_sv() { return sv; }
     int get_ms_elapsed() { return ms_elapsed; }
 
@@ -53,10 +54,10 @@ private:
     bool longint_en;
 
     // DLL filter
-    PLL dll;
+    PLL *dll;
 
     // PLL filter
-    PLL pll;
+    PLL *pll;
     double carrier_aiding_smoothed;
     double carrier_aiding_alpha;
     bool fll_pull_in;

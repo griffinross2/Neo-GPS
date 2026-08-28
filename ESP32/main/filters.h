@@ -7,6 +7,7 @@ class PLL
 {
 public:
     PLL() {}
+    virtual ~PLL() {}
     virtual double update(double input) { return 0; }
     virtual double update(double input, double int_time) { return 0; }
     virtual double update(double fll_input, double pll_input, double int_time) { return 0; }

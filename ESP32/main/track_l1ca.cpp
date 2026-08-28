@@ -8,15 +8,15 @@
 #define CODE_LENGTH 1023
 #define FREQ_L1CA 1.57542e9
 #define GNSS_PI 3.14159265358979323846
-#define BIT_DESYNC_THRESHOLD 36.0
-#define BIT_SYNC_THRESHOLD 34.0
+#define BIT_DESYNC_THRESHOLD 34.0
+#define BIT_SYNC_THRESHOLD 38.0
 #define BIT_SYNC_MS 1000
 
 // FLL pull-in: for the first FLL_PULLIN_MS of tracking, run the loop as FLL-only
 // (wide bandwidth, no phase term) to resolve large residual Doppler error left over
 // from acquisition before handing off to phase tracking. FLL_ASSIST_BW is a small
 // residual FLL term kept active afterward to help the Costas loop through dynamics.
-#define FLL_PULLIN_MS 500
+#define FLL_PULLIN_MS 1000
 #define FLL_PULLIN_BW 20.0
 #define FLL_ASSIST_BW 2.0
 #define FLL_ASSIST_CN0_ENABLE 28.0  // (re-)enable FLL assist once smoothed cn0 drops below this
@@ -111,11 +111,11 @@ GPSL1CATracker::GPSL1CATracker(int sv, double fs, double fc, double doppler)
     longint_en = false;
 
     // DLL filter
-    dll = SecondOrderPLL(0.2, doppler * CHIP_RATE / FREQ_L1CA);
+    dll = new SecondOrderPLL(0.2, doppler * CHIP_RATE / FREQ_L1CA);
 
     // PLL filter (starts FLL-only, wide bandwidth, to pull in residual acquisition
     // frequency error before the phase term is enabled)
-    pll = ThirdOrderFLLAssistedPLL(FLL_PULLIN_BW, 0.0, doppler);
+    pll = new ThirdOrderFLLAssistedPLL(FLL_PULLIN_BW, 0.0, doppler);
     fll_pull_in = true;
     fll_pullin_deadline_ms = FLL_PULLIN_MS;
     fll_assist_active = true;
@@ -152,6 +152,8 @@ GPSL1CATracker::GPSL1CATracker(int sv, double fs, double fc, double doppler)
 
 GPSL1CATracker::~GPSL1CATracker()
 {
+    delete dll;
+    delete pll;
 }
 
 // Update the tracker with a new epoch
@@ -208,8 +210,8 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
         if (fll_pull_in)
         {
             // Stay FLL-only (no phase term) while pulling in
-            pll.set_bandwidth(FLL_PULLIN_BW, 0.0);
-            dll.set_bandwidth(BW_SCHEDULE[0].bn_dll);
+            pll->set_bandwidth(FLL_PULLIN_BW, 0.0);
+            dll->set_bandwidth(BW_SCHEDULE[0].bn_dll);
         }
         else
         {
@@ -217,8 +219,8 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
             double bw_dll = 0;
             bandwidth_from_cn0(cn0_smoothed, &bw_pll, &bw_dll);
 
-            pll.set_bandwidth(FLL_ASSIST_BW, bw_pll);
-            dll.set_bandwidth(bw_dll);
+            pll->set_bandwidth(FLL_ASSIST_BW, bw_pll);
+            dll->set_bandwidth(bw_dll);
         }
     }
 
@@ -302,10 +304,10 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
         // would tell the filter 5x too much time had elapsed since its last call,
         // over-integrating the discriminator's sign every 5th epoch and producing a
         // systematic one-directional drift instead of noise.
-        carrier_error = pll.update(0.0, carrier_discriminator, 0.001); // Hz
+        carrier_error = pll->update(0.0, carrier_discriminator, 0.001); // Hz
 
         // Filter the code discriminator
-        code_error = dll.update(code_discriminator, 0.001); // chips/s
+        code_error = dll->update(code_discriminator, 0.001); // chips/s
     }
     else
     {
@@ -326,10 +328,10 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
         }
 
         // Filter the carrier discriminator
-        carrier_error = pll.update(carrier_discriminator_fll, carrier_discriminator, 0.001); // Hz
+        carrier_error = pll->update(carrier_discriminator_fll, carrier_discriminator, 0.001); // Hz
 
         // Filter the code discriminator
-        code_error = dll.update(code_discriminator, 0.001); // chips/s
+        code_error = dll->update(code_discriminator, 0.001); // chips/s
     }
 
     // printf("%d, %d\n", ip, qp);
@@ -353,7 +355,7 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
         bit_sum += ip;
     }
     // Start bit sync when above threshold
-    else if (cn0 > BIT_SYNC_THRESHOLD || bit_sync_count != 0)
+    else if (cn0_smoothed > BIT_SYNC_THRESHOLD || bit_sync_count != 0)
     {
         if (bit_sync_count >= BIT_SYNC_MS)
         {
@@ -371,13 +373,28 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
 
             // Synchronize
             bit_synced = true;
+            printf("L1 C/A PRN %d: bit sync achieved at %lld ms, offset %d\n", sv, ms_elapsed, bit_off);
             bit_ms -= bit_off + 1;
             if (bit_ms < 0)
                 bit_ms += 20;
+
+            for (int i = 0; i < 20; i++)
+            {
+                printf("%d ", bit_hist[i]);
+            }
+            printf("\n");
         }
         // Update the bit sync histogram
         bit_hist[bit_ms % 20] += ((ip > 0) != (last_ip > 0)) ? 1 : 0;
         bit_sync_count++;
+    }
+
+    if (bit_synced && cn0_smoothed < BIT_DESYNC_THRESHOLD)
+    {
+        printf("L1 C/A PRN %d: lost bit sync at %lld ms\n", sv, ms_elapsed);
+        bit_synced = false;
+        bit_sync_count = 0;
+        memset(bit_hist, 0, sizeof(bit_hist));
     }
 
     if (bit_synced && bit_ms == 0)
@@ -385,11 +402,10 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
         longint_en = true;
         carrier_aiding_alpha = 0.05;
     }
-    if (cn0_smoothed < BIT_DESYNC_THRESHOLD)
+    else if (!bit_synced)
     {
         longint_en = false;
         carrier_aiding_alpha = 1.0;
-        bit_sync_count = 0;
     }
 
     // if (sv == 7 && this->ms_elapsed % 10 == 0)
@@ -417,6 +433,8 @@ void GPSL1CATracker::update_epoch(int32_t ip, int32_t qp, int32_t ie, int32_t qe
         ql_longint = 0;
     }
 
+    last_ip = ip;
+
     // Set the flag to indicate that this epoch has been processed
     ms_elapsed++;
 }
@@ -428,9 +446,15 @@ void GPSL1CATracker::update_nav()
     uint8_t p[6];
 
     if (memcmp(nav_buf, preamble_norm, 8) == 0)
-        p[4] = p[5] = 0;
+    {
+        p[4] = 0;
+        p[5] = 0;
+    }
     else if (memcmp(nav_buf, preamble_inv, 8) == 0)
-        p[4] = p[5] = 1;
+    {
+        p[4] = 1;
+        p[5] = 1;
+    }
     else
     {
         // No preamble found
@@ -447,6 +471,7 @@ void GPSL1CATracker::update_nav()
             // Invalid parity
             memmove(nav_buf, nav_buf + 1, 299);
             nav_count--;
+            printf("par\n");
             return;
         }
     }
@@ -458,6 +483,7 @@ void GPSL1CATracker::update_nav()
         // Invalid subframe ID
         memmove(nav_buf, nav_buf + 1, 299);
         nav_count--;
+        printf("sid\n");
         return;
     }
 

@@ -110,9 +110,9 @@ void app_main(void)
             gps_if_set_channel_code_rate(0, code_rate);
             gps_if_set_channel_lo_rate(0, carrier_rate);
 
-            if (ch0_track.get_ms_elapsed() % 500 == 0)
+            if (ch0_track.get_ms_elapsed() % 1000 == 0)
             {
-                printf("C/N0: %.2f dB-Hz\n", ch0_track.get_cn0());
+                printf("C/N0: %.2f dB-Hz, C/N0 (smoothed): %.2f dB-Hz\n", ch0_track.get_cn0(), ch0_track.get_cn0_smoothed());
             }
         }
     }
