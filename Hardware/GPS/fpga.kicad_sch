@@ -2053,6 +2053,248 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Memory_Flash:W25Q128JVS"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at -6.35 11.43 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "W25Q128JVS"
+				(at 7.62 11.43 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm"
+				(at 0 22.86 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://www.winbond.com/resource-files/w25q128jv_dtr%20revc%2003272018%20plus.pdf"
+				(at 0 25.4 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "128Mbit / 16MiB Serial Flash Memory, Standard/Dual/Quad SPI, 2.7-3.6V, SOIC-8"
+				(at 0 27.94 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "flash memory SPI QPI DTR"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "*SOIC*5.3x5.3mm*P1.27mm*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "W25Q128JVS_0_1"
+				(rectangle
+					(start -7.62 10.16)
+					(end 10.16 -10.16)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "W25Q128JVS_1_1"
+				(pin input line
+					(at -10.16 7.62 0)
+					(length 2.54)
+					(name "~{CS}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -10.16 0 0)
+					(length 2.54)
+					(name "DO/IO_{1}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -10.16 -2.54 0)
+					(length 2.54)
+					(name "~{WP}/IO_{2}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 -12.7 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -10.16 2.54 0)
+					(length 2.54)
+					(name "DI/IO_{0}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -10.16 5.08 0)
+					(length 2.54)
+					(name "CLK"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -10.16 -5.08 0)
+					(length 2.54)
+					(name "~{HOLD}/~{RESET}/IO_{3}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 12.7 270)
+					(length 2.54)
+					(name "VCC"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "power:GND"
 			(power global)
 			(pin_numbers
@@ -2225,6 +2467,16 @@
 	)
 	(wire
 		(pts
+			(xy 198.12 231.14) (xy 208.28 231.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "019dc8d2-9d53-4c2e-8f1f-f2b00bf3f9f4")
+	)
+	(wire
+		(pts
 			(xy 121.92 81.28) (xy 121.92 83.82)
 		)
 		(stroke
@@ -2272,6 +2524,26 @@
 			(type default)
 		)
 		(uuid "1d9d5677-5631-4ebc-8b90-8dc568b6a878")
+	)
+	(wire
+		(pts
+			(xy 198.12 236.22) (xy 208.28 236.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2eab6efb-1027-4154-840b-13c7317c5e49")
+	)
+	(wire
+		(pts
+			(xy 246.38 93.98) (xy 236.22 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "33c0bc67-9727-4f4f-8762-e9c33ccb8651")
 	)
 	(wire
 		(pts
@@ -2355,6 +2627,16 @@
 	)
 	(wire
 		(pts
+			(xy 246.38 58.42) (xy 236.22 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "84dd72c9-e5ba-4151-8068-aacbb919cce1")
+	)
+	(wire
+		(pts
 			(xy 119.38 60.96) (xy 121.92 60.96)
 		)
 		(stroke
@@ -2385,6 +2667,26 @@
 	)
 	(wire
 		(pts
+			(xy 198.12 238.76) (xy 208.28 238.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cd4513b2-41fc-44e3-97a3-6f13a3416a90")
+	)
+	(wire
+		(pts
+			(xy 246.38 91.44) (xy 236.22 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "da3ec77e-c977-4e37-9fa5-9cac0cd89e5a")
+	)
+	(wire
+		(pts
 			(xy 121.92 71.12) (xy 121.92 73.66)
 		)
 		(stroke
@@ -2392,6 +2694,16 @@
 			(type default)
 		)
 		(uuid "e013d9af-2662-4329-8b12-dc2c72d58152")
+	)
+	(wire
+		(pts
+			(xy 198.12 233.68) (xy 208.28 233.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e96ba0f1-d811-450c-b6b7-b94bdeb6ad07")
 	)
 	(wire
 		(pts
@@ -2415,6 +2727,16 @@
 	)
 	(wire
 		(pts
+			(xy 246.38 55.88) (xy 236.22 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ff739f03-37e5-42ff-9f9b-fa122c14c040")
+	)
+	(wire
+		(pts
 			(xy 119.38 71.12) (xy 121.92 71.12)
 		)
 		(stroke
@@ -2422,6 +2744,86 @@
 			(type default)
 		)
 		(uuid "fff6993b-7646-4c3a-bf5c-aa20d1cff5fd")
+	)
+	(label "CFG_D0"
+		(at 208.28 236.22 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "48ea4666-3027-45f7-b6e0-40ed7d4ffb83")
+	)
+	(label "CFG_CS"
+		(at 236.22 91.44 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "642b0bde-8328-4242-aaf4-9e8bb3ba5f4c")
+	)
+	(label "CFG_D0"
+		(at 236.22 93.98 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "7350da3e-bd5b-4965-bd2b-dd831cde191d")
+	)
+	(label "CFG_CK"
+		(at 208.28 233.68 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "7c426c94-7781-4950-beea-9c55d3640a67")
+	)
+	(label "CFG_D1"
+		(at 208.28 238.76 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "7c9a1705-9e0e-4ff1-9e00-7f307d64fc4c")
+	)
+	(label "CFG_CS"
+		(at 208.28 231.14 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "7f548137-5742-4939-a7b4-f77cced65399")
+	)
+	(label "CFG_CK"
+		(at 236.22 55.88 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a6e8c7d9-1a27-42a0-a582-4496449e434d")
+	)
+	(label "CFG_D1"
+		(at 236.22 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "cee0fca9-01e2-4d2f-a019-02b3c25550a4")
 	)
 	(symbol
 		(lib_id "CustomSymbols:TI60F100S3F2I3")
@@ -2795,6 +3197,184 @@
 				(path "/61c049dc-805b-4562-a164-b3263a6a0d84/ad9631d1-c79c-4424-a4bb-09b126b8e600"
 					(reference "U2")
 					(unit 2)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 187.96 251.46 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2ace22c7-6be2-4ded-8ecb-739499673ced")
+		(property "Reference" "#PWR02"
+			(at 187.96 257.81 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 187.96 256.54 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 187.96 251.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 187.96 251.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 187.96 251.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d7184c3b-72fd-4889-870a-2cbfeacea43d")
+		)
+		(instances
+			(project "gps"
+				(path "/61c049dc-805b-4562-a164-b3263a6a0d84/ad9631d1-c79c-4424-a4bb-09b126b8e600"
+					(reference "#PWR02")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Memory_Flash:W25Q128JVS")
+		(at 187.96 238.76 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "456e75b4-f63b-47a4-802e-59f2a5d25298")
+		(property "Reference" "U3"
+			(at 176.53 237.4899 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "W25Q128JVS"
+			(at 176.53 240.0299 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm"
+			(at 187.96 215.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.winbond.com/resource-files/w25q128jv_dtr%20revc%2003272018%20plus.pdf"
+			(at 187.96 213.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "128Mbit / 16MiB Serial Flash Memory, Standard/Dual/Quad SPI, 2.7-3.6V, SOIC-8"
+			(at 187.96 210.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "6"
+			(uuid "6fef4dad-f1e0-4e3f-9b2b-3b954396389f")
+		)
+		(pin "5"
+			(uuid "98146fa5-d324-4022-8c26-7bf53fc15688")
+		)
+		(pin "8"
+			(uuid "2ca37a15-ba3a-4580-aefe-4f20a3e2f46c")
+		)
+		(pin "4"
+			(uuid "6f059fa0-5b96-4b0e-9c9c-aac5f70b1380")
+		)
+		(pin "2"
+			(uuid "db96fa53-edc1-413c-abbc-c3619af279b8")
+		)
+		(pin "3"
+			(uuid "65f337b3-e2e8-4424-a191-f946c2e3ced2")
+		)
+		(pin "1"
+			(uuid "4116f2a3-faca-4c4a-8eca-9ee862b45651")
+		)
+		(pin "7"
+			(uuid "dc41a24b-5de4-4e44-98ec-d0d1ef997f52")
+		)
+		(instances
+			(project "gps"
+				(path "/61c049dc-805b-4562-a164-b3263a6a0d84/ad9631d1-c79c-4424-a4bb-09b126b8e600"
+					(reference "U3")
+					(unit 1)
 				)
 			)
 		)

@@ -533,6 +533,7 @@
       "netlist": "",
       "plot": "outputs/",
       "specctra_dsn": "",
+      "step": "",
       "vrml": ""
     },
     "page_layout_descr_file": ""
