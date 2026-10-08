@@ -1,18 +1,42 @@
-cmake_minimum_required(VERSION 3.21)
-project(Simulation)
+cmake_minimum_required(VERSION 3.26)
+project(NeoGPS)
+
+include(FetchContent)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add executable
-add_executable(${PROJECT_NAME})
+add_library(${PROJECT_NAME} STATIC)
+
+# Eigen
+FetchContent_Declare(
+    eigen
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG 5.0.1
+)
+
+FetchContent_MakeAvailable(eigen)
+
+FetchContent_GetProperties(eigen
+    POPULATED eigen_POPULATED
+    SOURCE_DIR eigen_SOURCE_DIR
+    BINARY_DIR eigen_BINARY_DIR
+)
+
+if(eigen_POPULATED)
+    message(STATUS "Eigen has been populated.")
+    message(STATUS "Source directory: ${eigen_SOURCE_DIR}")
+    message(STATUS "Binary directory: ${eigen_BINARY_DIR}")
+endif()
 
 # Add source files
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-# inc directory
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/inc)
+# Include directories
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 
 # Libraries
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/fftw3)
@@ -28,14 +52,16 @@ add_custom_target(fftw3_import ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/fftw3/lib
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/fftw3/libfftw3-3.lib)
 
-# DLL
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_CURRENT_SOURCE_DIR}/fftw3/libfftw3-3.dll
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>/libfftw3-3.dll)
+# Compile definitions
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+    EIGEN_NO_MALLOC
+)
 
-# Signal file
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_CURRENT_SOURCE_DIR}/signal.bin
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>/signal.bin)
+# Tests/examples
+add_subdirectory(tests/acquisition)
+add_subdirectory(tests/track1l1ca)
+add_subdirectory(tests/trackl1ca)
+add_subdirectory(tests/code)
+add_subdirectory(tests/track1e1)
+add_subdirectory(tests/tracke1)
+add_subdirectory(tests/solve)

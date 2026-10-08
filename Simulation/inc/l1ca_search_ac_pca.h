@@ -1,5 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include <stdint.h>
 
-GPS_Status_t l1ca_search_ac_pca(uint8_t *samples, size_t num_samples, GPS_Config_t &gps_conf, int sv, double &code_phase, double &doppler, double &power);
+int l1ca_search_ac_pca(int8_t* samples, double freq_if_hz, double freq_sample_hz, int sv, double& code_phase,
+                       double& doppler, double& power);

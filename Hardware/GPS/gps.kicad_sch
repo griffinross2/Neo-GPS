@@ -5,9 +5,49 @@
 	(uuid "61c049dc-805b-4562-a164-b3263a6a0d84")
 	(paper "A4")
 	(lib_symbols)
+	(text "Frontend"
+		(exclude_from_sim no)
+		(at 88.9 127.254 0)
+		(effects
+			(font
+				(size 10 10)
+			)
+		)
+		(uuid "00311ade-538d-4a96-b48f-10e8c6aaa519")
+	)
+	(text "MCU"
+		(exclude_from_sim no)
+		(at 88.9 51.308 0)
+		(effects
+			(font
+				(size 12 12)
+			)
+		)
+		(uuid "488e5df1-e6e9-4f3b-a0a0-f848f7cb5896")
+	)
+	(text "Power"
+		(exclude_from_sim no)
+		(at 215.9 126.492 0)
+		(effects
+			(font
+				(size 12 12)
+			)
+		)
+		(uuid "4b50a88b-565a-4a95-acc3-1f53de3a8adf")
+	)
+	(text "FPGA"
+		(exclude_from_sim no)
+		(at 215.138 51.308 0)
+		(effects
+			(font
+				(size 12 12)
+			)
+		)
+		(uuid "ae67b39d-bf2d-447d-b44e-baed57cced98")
+	)
 	(sheet
-		(at 63.5 76.2)
-		(size 50.8 50.8)
+		(at 50.8 25.4)
+		(size 76.2 50.8)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
@@ -22,7 +62,7 @@
 		)
 		(uuid "3b4adca6-db32-4ca9-9134-204223dc44a3")
 		(property "Sheetname" "MCU"
-			(at 63.5 75.4884 0)
+			(at 50.8 24.6884 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -33,7 +73,7 @@
 			)
 		)
 		(property "Sheetfile" "mcu.kicad_sch"
-			(at 63.5 127.5846 0)
+			(at 50.8 76.7846 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -44,7 +84,7 @@
 			)
 		)
 		(property "Field2" ""
-			(at 63.5 76.2 0)
+			(at 50.8 25.4 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -63,8 +103,65 @@
 		)
 	)
 	(sheet
-		(at 187.96 76.2)
-		(size 50.8 50.8)
+		(at 50.8 102.87)
+		(size 76.2 50.8)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "8bfe8670-8e88-427c-9115-1ec85d38ba00")
+		(property "Sheetname" "Frontend"
+			(at 50.8 102.1584 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "frontend.kicad_sch"
+			(at 50.8 154.2546 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(property "Field2" ""
+			(at 50.8 102.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(instances
+			(project "gps"
+				(path "/61c049dc-805b-4562-a164-b3263a6a0d84"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 177.8 25.4)
+		(size 76.2 50.8)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
@@ -79,7 +176,7 @@
 		)
 		(uuid "ad9631d1-c79c-4424-a4bb-09b126b8e600")
 		(property "Sheetname" "FPGA"
-			(at 187.96 75.4884 0)
+			(at 177.8 24.6884 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -90,7 +187,7 @@
 			)
 		)
 		(property "Sheetfile" "fpga.kicad_sch"
-			(at 187.96 127.5846 0)
+			(at 177.8 76.7846 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -101,7 +198,7 @@
 			)
 		)
 		(property "Field2" ""
-			(at 187.96 76.2 0)
+			(at 177.8 25.4 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -115,6 +212,52 @@
 			(project "gps"
 				(path "/61c049dc-805b-4562-a164-b3263a6a0d84"
 					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 177.8 101.6)
+		(size 76.2 50.8)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "dd9b4a77-4b0b-4f4f-a54d-de458a15f708")
+		(property "Sheetname" "Power"
+			(at 177.8 100.8884 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "power.kicad_sch"
+			(at 177.8 152.9846 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "gps"
+				(path "/61c049dc-805b-4562-a164-b3263a6a0d84"
+					(page "5")
 				)
 			)
 		)

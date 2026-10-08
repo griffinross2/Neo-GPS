@@ -1,5 +1,5 @@
 // Simple Dual-Port Block RAM with Two Clocks
-// File: drpam.v, previously simple_dual_two_clocks.v
+// File: dpram.v, previously simple_dual_two_clocks.v
 // Pasted and modified from AMD Xilinx UG901 (v2025.2)
 
 module dpram (clka,clkb,ena,enb,wea,addra,addrb,dia,dob);
