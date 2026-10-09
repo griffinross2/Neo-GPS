@@ -28,7 +28,8 @@ class L1CAChannel
 {
 public:
     L1CAChannel() = delete;
-    L1CAChannel(const double freq_sample_hz, const double freq_if_hz);
+    L1CAChannel(const double freq_sample_hz, const double freq_if_hz, L1CAEphemeris& ephemeris)
+        : m_freq_sample_hz(freq_sample_hz), m_freq_if_hz(freq_if_hz), m_ephemeris(ephemeris) {};
 
     void start(int sv, double doppler, double code_phase);
     void stop();
@@ -42,11 +43,11 @@ public:
     double get_corrected_gps_time_of_week() const;
     void get_satellite_ecef(double& x, double& y, double& z) const
     {
-        m_ephemeris.get_satellite_ecef(get_corrected_gps_time_of_week(), x, y, z);
+        m_ephemeris.get_satellite_ecef(m_sv, get_corrected_gps_time_of_week(), x, y, z);
     }
     bool can_solve() const
     {
-        return m_nav_valid && m_ephemeris.is_ephemeris_valid() && m_state == L1CA_CHANNEL_STATE_TRACKING_BIT_SYNCED;
+        return m_nav_valid && m_ephemeris.is_ephemeris_valid(m_sv) && m_state == L1CA_CHANNEL_STATE_TRACKING_BIT_SYNCED;
     }
 
 private:
@@ -124,7 +125,7 @@ private:
 
     // Ephemeris
     size_t m_epochs_since_last_nav_message = 0;
-    L1CAEphemeris m_ephemeris;
+    L1CAEphemeris& m_ephemeris;
 
     // Private functions
     inline void update_sample(int sample);

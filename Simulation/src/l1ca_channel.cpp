@@ -7,11 +7,6 @@
 #include <print>
 #include <string>
 
-L1CAChannel::L1CAChannel(const double freq_sample_hz, const double freq_if_hz)
-    : m_freq_sample_hz(freq_sample_hz), m_freq_if_hz(freq_if_hz)
-{
-}
-
 void L1CAChannel::start(int sv, double doppler, double code_phase)
 {
     m_sv = sv;
@@ -74,7 +69,6 @@ void L1CAChannel::start(int sv, double doppler, double code_phase)
     m_nav_valid = false;
 
     m_epochs_since_last_nav_message = 0;
-    m_ephemeris = L1CAEphemeris();
 
     m_state = L1CA_CHANNEL_STATE_PULL_IN_FLL;
 }
@@ -338,13 +332,7 @@ inline void L1CAChannel::update_bit_sync()
         else
         {
             m_state = L1CA_CHANNEL_STATE_TRACKING;
-            std::println("SV {}: Bit synchronization failed", m_sv);
-
-            for (size_t i = 0; i < 20; i++)
-            {
-                std::print("{} ", m_bit_sync_histogram[i]);
-            }
-            std::println();
+            // std::println("SV {}: Bit synchronization failed", m_sv);
         }
 
         reset_bit_sync();
@@ -492,7 +480,7 @@ inline void L1CAChannel::update_nav()
         std::println("GPS L1 SV {} found subframe {} at {} ms. TOW = {}", m_sv, subframe_id, m_ms_elapsed,
                      time_of_week);
 
-        m_ephemeris.update(m_bit_buffer);
+        m_ephemeris.update(m_sv, m_bit_buffer);
 
         m_bit_count = 0;
         return;
@@ -507,7 +495,7 @@ double L1CAChannel::get_corrected_gps_time_of_week() const
     double t_sv = (m_last_time_of_week * 6.0) + (m_epochs_since_last_nav_message / 1000.0) +
                   (code_phase_chips / GPS_L1CA_CODE_RATE_CPS);
 
-    double t = t_sv - m_ephemeris.get_clock_correction(t_sv);
+    double t = t_sv - m_ephemeris.get_clock_correction(m_sv, t_sv);
 
     return t;
 }

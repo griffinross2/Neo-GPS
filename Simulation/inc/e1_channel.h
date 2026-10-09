@@ -26,7 +26,8 @@ class E1Channel
 {
 public:
     E1Channel() = delete;
-    E1Channel(const double freq_sample_hz, const double freq_if_hz);
+    E1Channel(const double freq_sample_hz, const double freq_if_hz, E1Ephemeris& ephemeris)
+        : m_freq_sample_hz(freq_sample_hz), m_freq_if_hz(freq_if_hz), m_ephemeris(ephemeris) {};
 
     void start(int sv, double doppler, double code_phase);
     void stop();
@@ -35,9 +36,12 @@ public:
     double get_corrected_gps_time_of_week() const;
     void get_satellite_ecef(double& x, double& y, double& z) const
     {
-        m_ephemeris.get_satellite_ecef(get_corrected_gps_time_of_week(), x, y, z);
+        m_ephemeris.get_satellite_ecef(m_sv, get_corrected_gps_time_of_week(), x, y, z);
     }
-    bool can_solve() const { return m_ephemeris.is_ephemeris_valid() && m_state == E1_CHANNEL_STATE_TRACKING; }
+    bool can_solve() const
+    {
+        return m_tow_synced && m_ephemeris.is_ephemeris_valid(m_sv) && m_state == E1_CHANNEL_STATE_TRACKING;
+    }
 
     int get_sv() const { return m_sv; }
     int get_last_ip() const { return m_prev_ip; }
@@ -131,6 +135,7 @@ private:
     std::array<uint8_t, 128> m_page_buffer;
     bool m_even_received = false;
     size_t m_epochs_since_last_tow_sync = 0;
+    bool m_tow_synced = false;
 
     // Ephemeris
     E1Ephemeris m_ephemeris;

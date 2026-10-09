@@ -1,5 +1,6 @@
 #include "l1ca_search_ac_pca.h"
 #include "l1ca_channel.h"
+#include "l1ca_ephemeris.h"
 
 #include <print>
 #include <chrono>
@@ -74,7 +75,8 @@ int main()
     std::println("Best SV: sv={}, code_phase={:10.3f} chips, doppler={:12.3f} Hz, power: {:4.0f}", best_sv,
                  best_code_phase, best_doppler, best_power);
 
-    L1CAChannel channel(FS, IF);
+    L1CAEphemeris l1ca_ephemeris;
+    L1CAChannel channel(FS, IF, l1ca_ephemeris);
     channel.start(best_sv, best_doppler, best_code_phase);
 
     for (size_t i = 0; i < num_samples; i++)

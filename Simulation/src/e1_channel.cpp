@@ -8,11 +8,6 @@
 #include <string>
 #include <algorithm>
 
-E1Channel::E1Channel(const double freq_sample_hz, const double freq_if_hz)
-    : m_freq_sample_hz(freq_sample_hz), m_freq_if_hz(freq_if_hz)
-{
-}
-
 void E1Channel::start(int sv, double doppler, double code_phase)
 {
     m_sv = sv;
@@ -82,8 +77,7 @@ void E1Channel::start(int sv, double doppler, double code_phase)
     m_bit_count = 0;
     m_even_received = false;
     m_epochs_since_last_tow_sync = 0;
-
-    m_ephemeris = E1Ephemeris();
+    m_tow_synced = false;
 
     m_state = E1_CHANNEL_STATE_PULL_IN_PLL;
 }
@@ -461,7 +455,7 @@ inline void E1Channel::update_nav()
             uint8_t page_type = m_page_buffer[0] << 5 | m_page_buffer[1] << 4 | m_page_buffer[2] << 3 |
                                 m_page_buffer[3] << 2 | m_page_buffer[4] << 1 | m_page_buffer[5];
             std::println("SV {}: Full page type {} received", m_sv, page_type);
-            m_ephemeris.update(m_page_buffer);
+            m_ephemeris.update(m_sv, m_page_buffer);
 
             if (page_type == 5)
             {
@@ -469,6 +463,7 @@ inline void E1Channel::update_nav()
 
                 // The TOW is referenced to the start of the page, which was 500 symbols ago
                 m_epochs_since_last_tow_sync = 500;
+                m_tow_synced = true;
             }
         }
     }
@@ -476,7 +471,7 @@ inline void E1Channel::update_nav()
 
 double E1Channel::get_corrected_gps_time_of_week() const
 {
-    double tow = m_ephemeris.get_TOW() + m_epochs_since_last_tow_sync * 0.004;
+    double tow = m_ephemeris.get_TOW(m_sv) + m_epochs_since_last_tow_sync * 0.004;
     // Account for rollover
     if (tow >= 604800.0)
     {
@@ -487,8 +482,8 @@ double E1Channel::get_corrected_gps_time_of_week() const
     double code_phase_chips = m_code_gen.chip + m_code_phase - E1_CHIP_SPACING;
 
     double t = tow + (code_phase_chips / GALILEO_E1_CODE_RATE_CPS);
-    t -= m_ephemeris.get_clock_correction(t);
-    t = m_ephemeris.gal_time_to_gps_time(t);
+    t -= m_ephemeris.get_clock_correction(m_sv, t);
+    t = m_ephemeris.gal_time_to_gps_time(m_sv, t);
 
     return t;
 }

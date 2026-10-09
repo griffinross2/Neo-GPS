@@ -39,11 +39,12 @@ int main()
 
     fclose(f);
 
+    L1CAEphemeris l1ca_ephemeris;
     std::array<L1CAChannel, 4> channels{
-        L1CAChannel(FS, IF),
-        L1CAChannel(FS, IF),
-        L1CAChannel(FS, IF),
-        L1CAChannel(FS, IF),
+        L1CAChannel(FS, IF, l1ca_ephemeris),
+        L1CAChannel(FS, IF, l1ca_ephemeris),
+        L1CAChannel(FS, IF, l1ca_ephemeris),
+        L1CAChannel(FS, IF, l1ca_ephemeris),
     };
     int channel_index = 0;
 

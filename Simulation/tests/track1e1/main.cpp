@@ -1,5 +1,6 @@
 #include "e1_search_ac_pca.h"
 #include "e1_channel.h"
+#include "e1_ephemeris.h"
 
 #include <print>
 #include <chrono>
@@ -74,7 +75,8 @@ int main()
     std::println("Best SV: sv={}, code_phase={:10.3f} chips, doppler={:12.3f} Hz, power: {:4.0f}", best_sv,
                  best_code_phase, best_doppler, best_power);
 
-    E1Channel channel(FS, IF);
+    E1Ephemeris ephemeris;
+    E1Channel channel(FS, IF, ephemeris);
     channel.start(best_sv, best_doppler, best_code_phase);
 
     for (size_t i = 0; i < num_samples; i++)

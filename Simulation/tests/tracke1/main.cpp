@@ -39,11 +39,12 @@ int main()
 
     fclose(f);
 
+    E1Ephemeris ephemeris;
     std::array<E1Channel, 4> channels{
-        E1Channel(FS, IF),
-        E1Channel(FS, IF),
-        E1Channel(FS, IF),
-        E1Channel(FS, IF),
+        E1Channel(FS, IF, ephemeris),
+        E1Channel(FS, IF, ephemeris),
+        E1Channel(FS, IF, ephemeris),
+        E1Channel(FS, IF, ephemeris),
     };
     int channel_index = 0;
 

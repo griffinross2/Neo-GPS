@@ -1,7 +1,9 @@
 #include "l1ca_search_ac_pca.h"
 #include "l1ca_channel.h"
+#include "l1ca_ephemeris.h"
 #include "e1_search_ac_pca.h"
 #include "e1_channel.h"
+#include "e1_ephemeris.h"
 #include "solve.h"
 #include "tools.h"
 
@@ -17,13 +19,16 @@ constexpr double IF = 4.02e6;
 int8_t* samples = nullptr;
 size_t num_samples = 0;
 
+L1CAEphemeris l1ca_ephemeris;
 std::array<L1CAChannel, 6> l1ca_channels{
-    L1CAChannel(FS, IF), L1CAChannel(FS, IF), L1CAChannel(FS, IF),
-    L1CAChannel(FS, IF), L1CAChannel(FS, IF), L1CAChannel(FS, IF),
+    L1CAChannel(FS, IF, l1ca_ephemeris), L1CAChannel(FS, IF, l1ca_ephemeris), L1CAChannel(FS, IF, l1ca_ephemeris),
+    L1CAChannel(FS, IF, l1ca_ephemeris), L1CAChannel(FS, IF, l1ca_ephemeris), L1CAChannel(FS, IF, l1ca_ephemeris),
 };
 
+E1Ephemeris e1_ephemeris;
 std::array<E1Channel, 6> e1_channels{
-    E1Channel(FS, IF), E1Channel(FS, IF), E1Channel(FS, IF), E1Channel(FS, IF), E1Channel(FS, IF), E1Channel(FS, IF),
+    E1Channel(FS, IF, e1_ephemeris), E1Channel(FS, IF, e1_ephemeris), E1Channel(FS, IF, e1_ephemeris),
+    E1Channel(FS, IF, e1_ephemeris), E1Channel(FS, IF, e1_ephemeris), E1Channel(FS, IF, e1_ephemeris),
 };
 
 void acquire_l1ca(int8_t* samples);
