@@ -1,19 +1,21 @@
-#include "pico/stdlib.h"
+#include "parallel_interface.h"
 
-void force_runtime(double &value)
-{
-    asm volatile("" : "+g"(value));
-}
+#include "pico/stdlib.h"
 
 int main()
 {
-    double a = 4.7;
-    double b = 2.3;
+    parallel_interface_init();
 
-    force_runtime(a);
-    force_runtime(b);
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, true);
+    while (true)
+    {
+        gpio_put(PICO_DEFAULT_LED_PIN, true);
+        sleep_ms(500);
+        gpio_put(PICO_DEFAULT_LED_PIN, false);
+        sleep_ms(500);
 
-    double c = a * b;
-
-    return int(c);
+        // parallel_interface_write(0xdead, 0x12345678);
+        uint32_t data = parallel_interface_read(0xdead);
+    }
 }

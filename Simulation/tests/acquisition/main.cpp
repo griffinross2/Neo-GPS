@@ -102,49 +102,47 @@ int main()
     elapsed_time = end_time - start_time;
     std::println("Search completed in {:.3f} seconds", elapsed_time.count());
 
-    // // BeiDou B1C
+    // BeiDou B1C
 
-    // std::println("Starting BeiDou search...");
-    // start_time = std::chrono::high_resolution_clock::now();
+    std::println("Starting BeiDou search...");
+    start_time = std::chrono::high_resolution_clock::now();
 
-    // for (int sv = 1; sv <= 63; sv++)
-    // {
-    //     b1c_search_ac_pca(samples, IF, FS, sv, code_phase, doppler, power);
-    //     std::string power_str = "*";
-    //     for (int i = 0; i < int(power / 10.0); i++)
-    //     {
-    //         power_str += "*";
-    //     }
-    //     std::println("SV{:3}: code_phase={:10.3f} chips, doppler={:12.3f} Hz, SNR: {:4.0f} {}", sv, code_phase,
-    //     doppler,
-    //                  power, power_str);
-    // }
+    for (int sv = 1; sv <= 63; sv++)
+    {
+        b1c_search_ac_pca(samples, IF, FS, sv, code_phase, doppler, power);
+        std::string power_str = "*";
+        for (int i = 0; i < int(power / 10.0); i++)
+        {
+            power_str += "*";
+        }
+        std::println("SV{:3}: code_phase={:10.3f} chips, doppler={:12.3f} Hz, SNR: {:4.0f} {}", sv, code_phase, doppler,
+                     power, power_str);
+    }
 
-    // end_time = std::chrono::high_resolution_clock::now();
-    // elapsed_time = end_time - start_time;
-    // std::println("Search completed in {:.3f} seconds", elapsed_time.count());
+    end_time = std::chrono::high_resolution_clock::now();
+    elapsed_time = end_time - start_time;
+    std::println("Search completed in {:.3f} seconds", elapsed_time.count());
 
-    // // GPS L1C
+    // GPS L1C
 
-    // std::println("Starting GPS L1C search...");
-    // start_time = std::chrono::high_resolution_clock::now();
+    std::println("Starting GPS L1C search...");
+    start_time = std::chrono::high_resolution_clock::now();
 
-    // for (int sv = 1; sv <= 37; sv++)
-    // {
-    //     l1c_search_ac_pca(samples, IF, FS, sv, code_phase, doppler, power);
-    //     std::string power_str = "*";
-    //     for (int i = 0; i < int(power / 10.0); i++)
-    //     {
-    //         power_str += "*";
-    //     }
-    //     std::println("SV{:3}: code_phase={:10.3f} chips, doppler={:12.3f} Hz, SNR: {:4.0f} {}", sv, code_phase,
-    //     doppler,
-    //                  power, power_str);
-    // }
+    for (int sv = 1; sv <= 37; sv++)
+    {
+        l1c_search_ac_pca(samples, IF, FS, sv, code_phase, doppler, power);
+        std::string power_str = "*";
+        for (int i = 0; i < int(power / 10.0); i++)
+        {
+            power_str += "*";
+        }
+        std::println("SV{:3}: code_phase={:10.3f} chips, doppler={:12.3f} Hz, SNR: {:4.0f} {}", sv, code_phase, doppler,
+                     power, power_str);
+    }
 
-    // end_time = std::chrono::high_resolution_clock::now();
-    // elapsed_time = end_time - start_time;
-    // std::println("Search completed in {:.3f} seconds", elapsed_time.count());
+    end_time = std::chrono::high_resolution_clock::now();
+    elapsed_time = end_time - start_time;
+    std::println("Search completed in {:.3f} seconds", elapsed_time.count());
 
     delete[] samples;
 

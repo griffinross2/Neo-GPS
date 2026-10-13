@@ -114,10 +114,10 @@ set_property -dict {PACKAGE_PIN V12 IOSTANDARD LVCMOS33} [get_ports uart_txd_in]
 #set_property -dict { PACKAGE_PIN L13   IOSTANDARD LVCMOS33 } [get_ports { ck_io[0] }]; #IO_0_14 Sch=ck_io[0]
 #set_property -dict { PACKAGE_PIN N13   IOSTANDARD LVCMOS33 } [get_ports { ck_io[1] }]; #IO_L6N_T0_D08_VREF_14 Sch=ck_io[1]
 #set_property -dict { PACKAGE_PIN L16   IOSTANDARD LVCMOS33 } [get_ports { ck_io[2] }]; #IO_L3N_T0_DQS_EMCCLK_14 Sch=ck_io[2]
-set_property -dict {PACKAGE_PIN R14 IOSTANDARD LVCMOS33} [get_ports ck_io3]
-set_property -dict {PACKAGE_PIN T14 IOSTANDARD LVCMOS33} [get_ports ck_io4]
-set_property -dict {PACKAGE_PIN R16 IOSTANDARD LVCMOS33} [get_ports ck_io5]
-set_property -dict {PACKAGE_PIN R17 IOSTANDARD LVCMOS33} [get_ports ck_io6]
+set_property -dict {PACKAGE_PIN R14 IOSTANDARD LVCMOS33} [get_ports ck_io3]; #IO_L13P_T2_MRCC_14      Sch=ck_io[3], MCU IF CLK
+set_property -dict {PACKAGE_PIN T14 IOSTANDARD LVCMOS33} [get_ports ck_io4]; #IO_L13N_T2_MRCC_14      Sch=ck_io[4], MCU IF CS
+#set_property -dict { PACKAGE_PIN R16   IOSTANDARD LVCMOS33 } [get_ports { ck_io5 }]; #IO_L14P_T2_SRCC_14      Sch=ck_io[5]
+#set_property -dict { PACKAGE_PIN R17   IOSTANDARD LVCMOS33 } [get_ports { ck_io6 }]; #IO_L14N_T2_SRCC_14      Sch=ck_io[6]
 #set_property -dict { PACKAGE_PIN V17   IOSTANDARD LVCMOS33 } [get_ports { ck_io[7] }]; #IO_L16N_T2_A15_D31_14 Sch=ck_io[7]
 #set_property -dict { PACKAGE_PIN R15   IOSTANDARD LVCMOS33 } [get_ports { ck_io[8] }]; #IO_L17P_T2_A14_D30_14 Sch=ck_io[8]
 #set_property -dict { PACKAGE_PIN T15   IOSTANDARD LVCMOS33 } [get_ports { ck_io[9] }]; #IO_L17N_T2_A13_D29_14 Sch=ck_io[9]
@@ -149,22 +149,22 @@ set_property -dict {PACKAGE_PIN R17 IOSTANDARD LVCMOS33} [get_ports ck_io6]
 
 ## ChipKit Digital I/O High
 ## Note: these pins are shared with PMOD Headers JC and JD and cannot be used at the same time as the applicable PMOD interface(s)
-#set_property -dict { PACKAGE_PIN U11   IOSTANDARD LVCMOS33 } [get_ports { ck_io[26] }]; #IO_L24P_T3_A01_D17_14 Sch=jd10/ck_io[26]
-#set_property -dict { PACKAGE_PIN T11   IOSTANDARD LVCMOS33 } [get_ports { ck_io[27] }]; #IO_L23N_T3_A02_D18_14 Sch=jd9/ck_io[27]
-#set_property -dict { PACKAGE_PIN R11   IOSTANDARD LVCMOS33 } [get_ports { ck_io[28] }]; #IO_L23P_T3_A03_D19_14 Sch=jd8/ck_io[28]
-#set_property -dict { PACKAGE_PIN T13   IOSTANDARD LVCMOS33 } [get_ports { ck_io[29] }]; #IO_L22N_T3_A04_D20_14 Sch=jd7/ck_io[29]
-#set_property -dict { PACKAGE_PIN T12   IOSTANDARD LVCMOS33 } [get_ports { ck_io[30] }]; #IO_L22P_T3_A05_D21_14 Sch=jd4/ck_io[30]
-#set_property -dict { PACKAGE_PIN V13   IOSTANDARD LVCMOS33 } [get_ports { ck_io[31] }]; #IO_L21N_T3_DQS_A06_D22_14 Sch=jd3/ck_io[31]
-#set_property -dict { PACKAGE_PIN U12   IOSTANDARD LVCMOS33 } [get_ports { ck_io[32] }]; #IO_L21P_T3_DQS_14 Sch=jd2/ck_io[32]
-#set_property -dict { PACKAGE_PIN V15   IOSTANDARD LVCMOS33 } [get_ports { ck_io[33] }]; #IO_L20N_T3_A07_D23_14 Sch=jd1/ck_io[33]
-#set_property -dict { PACKAGE_PIN V14   IOSTANDARD LVCMOS33 } [get_ports { ck_io[34] }]; #IO_L20P_T3_A08_D24_14 Sch=jc10/ck_io[34]
-#set_property -dict { PACKAGE_PIN R13   IOSTANDARD LVCMOS33 } [get_ports { ck_io[35] }]; #IO_L19N_T3_A09_D25_VREF_14 Sch=jc9/ck_io[35]
-#set_property -dict { PACKAGE_PIN P13   IOSTANDARD LVCMOS33 } [get_ports { ck_io[36] }]; #IO_L19P_T3_A10_D26_14 Sch=jc8/ck_io[36]
-#set_property -dict { PACKAGE_PIN U16   IOSTANDARD LVCMOS33 } [get_ports { ck_io[37] }]; #IO_L16P_T2_CSI_B_14 Sch=jc7/ck_io[37]
-#set_property -dict { PACKAGE_PIN U18   IOSTANDARD LVCMOS33 } [get_ports { ck_io[38] }]; #IO_L15N_T2_DQS_DOUT_CSO_B_14 Sch=jc4/ck_io[38]
-#set_property -dict { PACKAGE_PIN U17   IOSTANDARD LVCMOS33 } [get_ports { ck_io[39] }]; #IO_L15P_T2_DQS_RDWR_B_14 Sch=jc3/ck_io[39]
-#set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports { ck_io[40] }]; #IO_L18N_T2_A11_D27_14 Sch=jc2/ck_io[40]
-#set_property -dict { PACKAGE_PIN U15   IOSTANDARD LVCMOS33 } [get_ports { ck_io[41] }]; #IO_L18P_T2_A12_D28_14 Sch=jc1/ck_io[41]
+set_property -dict { PACKAGE_PIN U11   IOSTANDARD LVCMOS33 } [get_ports ck_io26]; #IO_L24P_T3_A01_D17_14 Sch=jd10/ck_io[26],        MCU IF D0
+set_property -dict { PACKAGE_PIN T11   IOSTANDARD LVCMOS33 } [get_ports ck_io27]; #IO_L23N_T3_A02_D18_14 Sch=jd9/ck_io[27],         MCU IF D1
+set_property -dict { PACKAGE_PIN R11   IOSTANDARD LVCMOS33 } [get_ports ck_io28]; #IO_L23P_T3_A03_D19_14 Sch=jd8/ck_io[28],         MCU IF D2
+set_property -dict { PACKAGE_PIN T13   IOSTANDARD LVCMOS33 } [get_ports ck_io29]; #IO_L22N_T3_A04_D20_14 Sch=jd7/ck_io[29],         MCU IF D3
+set_property -dict { PACKAGE_PIN T12   IOSTANDARD LVCMOS33 } [get_ports ck_io30]; #IO_L22P_T3_A05_D21_14 Sch=jd4/ck_io[30],         MCU IF D4
+set_property -dict { PACKAGE_PIN V13   IOSTANDARD LVCMOS33 } [get_ports ck_io31]; #IO_L21N_T3_DQS_A06_D22_14 Sch=jd3/ck_io[31],     MCU IF D5
+set_property -dict { PACKAGE_PIN U12   IOSTANDARD LVCMOS33 } [get_ports ck_io32]; #IO_L21P_T3_DQS_14 Sch=jd2/ck_io[32],             MCU IF D6
+set_property -dict { PACKAGE_PIN V15   IOSTANDARD LVCMOS33 } [get_ports ck_io33]; #IO_L20N_T3_A07_D23_14 Sch=jd1/ck_io[33],         MCU IF D7
+set_property -dict { PACKAGE_PIN V14   IOSTANDARD LVCMOS33 } [get_ports ck_io34]; #IO_L20P_T3_A08_D24_14 Sch=jc10/ck_io[34],        MCU IF D8
+set_property -dict { PACKAGE_PIN R13   IOSTANDARD LVCMOS33 } [get_ports ck_io35]; #IO_L19N_T3_A09_D25_VREF_14 Sch=jc9/ck_io[35],    MCU IF D9
+set_property -dict { PACKAGE_PIN P13   IOSTANDARD LVCMOS33 } [get_ports ck_io36]; #IO_L19P_T3_A10_D26_14 Sch=jc8/ck_io[36],         MCU IF D10
+set_property -dict { PACKAGE_PIN U16   IOSTANDARD LVCMOS33 } [get_ports ck_io37]; #IO_L16P_T2_CSI_B_14 Sch=jc7/ck_io[37],           MCU IF D11
+set_property -dict { PACKAGE_PIN U18   IOSTANDARD LVCMOS33 } [get_ports ck_io38]; #IO_L15N_T2_DQS_DOUT_CSO_B_14 Sch=jc4/ck_io[38],  MCU IF D12
+set_property -dict { PACKAGE_PIN U17   IOSTANDARD LVCMOS33 } [get_ports ck_io39]; #IO_L15P_T2_DQS_RDWR_B_14 Sch=jc3/ck_io[39],      MCU IF D13
+set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports ck_io40]; #IO_L18N_T2_A11_D27_14 Sch=jc2/ck_io[40],         MCU IF D14
+set_property -dict { PACKAGE_PIN U15   IOSTANDARD LVCMOS33 } [get_ports ck_io41]; #IO_L18P_T2_A12_D28_14 Sch=jc1/ck_io[41],         MCU IF D15
 
 
 ## ChipKit SPI

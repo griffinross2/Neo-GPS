@@ -1,0 +1,35 @@
+.program parallel_interface
+; 16-bit synchronous bus with chip select.
+; Satellite device should sample data on the rising edge and expect the
+; controller device to do the same.
+
+; Pin 0 is clock, pin 1 is CS
+.side_set 2
+
+.wrap_target
+
+; First thing in the FIFO is the pindir bits which essentially tells whether
+; to read or write. We leave it in the y register for later.
+pull side 2
+mov y, osr side 2
+
+; Now pull the cmd/address 16-bit word and write it to the data pins.
+; Also set the data counter here.
+pull side 2
+out pins, 16 side 0
+
+; Retrieve the pindir bits and write to pindirs.
+mov osr, y side 1
+out pindirs, 16 side 0
+
+; Pull the data to write (dummy if reading)
+pull side 1
+
+; Read/write two 16-bit words for 32-bits of data
+out pins, 16 side 0
+in pins, 16 side 1
+out pins, 16 side 0
+in pins, 16 side 1
+
+; Put ISR into rx fifo and raise CS
+push side 2

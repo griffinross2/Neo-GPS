@@ -48,7 +48,7 @@ int main()
 
     // TRACK
 
-    Solver<8> solver;
+    Solver<10> solver;
 
     for (size_t i = 0; i < num_samples; i++)
     {

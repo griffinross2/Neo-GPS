@@ -320,7 +320,7 @@ inline double E1Channel::code_phase_discriminator()
     double code_discriminator = 0.0;
     double num = ((ie - il) * ip + (qe - ql) * qp) -
                  E1_ASPECT_BETA * ((ie_no_sc - il_no_sc) * ip_no_sc + (qe_no_sc - ql_no_sc) * qp_no_sc);
-    double denom = (6 + E1_ASPECT_BETA * 2 * E1_CHIP_SPACING) * (ip * ip + qp * qp);
+    double denom = (6.0 + E1_ASPECT_BETA * 2.0 * E1_CHIP_SPACING) * (ip * ip + qp * qp);
 
     if (denom != 0)
     {
