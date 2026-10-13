@@ -30,7 +30,7 @@
     }
     add_files -fileset sources_1 [ glob ../src/memory/spram.v ]
     add_files -fileset sources_1 [ glob ../src/memory/dpram.v ]
-    add_files -fileset sources_1 [ glob ../src/spi/spi_device.sv ]
+    add_files -fileset sources_1 [ glob ../src/parallel_interface/parallel_interface.sv ]
     add_files -fileset sources_1 [ glob ../src/dsp/fft/*.sv ]
     add_files -fileset sources_1 [ glob ../src/gps/*.sv ]
     add_files -fileset sources_1 [ glob ../src/frontend/frontend_config.sv ]

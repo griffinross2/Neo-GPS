@@ -52,7 +52,7 @@ module parallel_interface_tb;
     // Clock generation
     initial begin
         clk = 0;
-        forever #(CLK_PERIOD/2) clk = ~clk; // 50 MHz clock
+        forever #(CLK_PERIOD/2) clk = ~clk;
     end
 
     task write_dut (

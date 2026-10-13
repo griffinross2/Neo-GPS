@@ -10,11 +10,11 @@ module l1ca_channel_unit # (
 ) (
     input logic gps_clk, core_clk, nrst,
     input logic signal_in,
-    output logic [15:0] spi_data_in,
-    input logic [15:0] spi_data_out,
-    input logic [14:0] spi_addr_out,
-    input logic spi_read,
-    input logic spi_write,
+    output logic [31:0] if_data_in,
+    input logic [31:0] if_data_out,
+    input logic [14:0] if_addr_out,
+    input logic if_read,
+    input logic if_write,
 
     input logic search_start
 );
@@ -128,7 +128,7 @@ module l1ca_channel_unit # (
     end
 
     always_comb begin
-        spi_data_in = 16'h0000;
+        if_data_in = 32'h0;
         next_ch_clear = ch_clear;
         next_ch_sv = ch_sv;
         next_ch_pause_clk = ch_pause_clk;
@@ -154,15 +154,15 @@ module l1ca_channel_unit # (
             next_ch_epoch_reg_gps = 1'b1;
         end
 
-        case (spi_addr_out)
+        case (if_addr_out)
             // channel control register
             (REG_OFFSET): begin
-                spi_data_in = {&ch_epoch_sync_clk, ch_clear, 8'b0, ch_sv};
-                if (spi_write) begin
-                    next_ch_clear = spi_data_out[14];
-                    next_ch_sv = spi_data_out[5:0];
+                if_data_in = {&ch_epoch_sync_clk, ch_clear, 24'd0, ch_sv};
+                if (if_write) begin
+                    next_ch_clear = if_data_out[30];
+                    next_ch_sv = if_data_out[5:0];
                 end
-                if (spi_read) begin
+                if (if_read) begin
                     // Clear epoch signal on read
                     next_ch_epoch_clear_clk = 1'b1;
                 end
@@ -170,110 +170,64 @@ module l1ca_channel_unit # (
 
             // channel pause register
             (REG_OFFSET + 15'h1): begin
-                spi_data_in = ch_pause_delay;
-                if (spi_write) begin
-                    next_ch_pause_delay = spi_data_out;
+                if_data_in = {16'd0, ch_pause_delay};
+                if (if_write) begin
+                    next_ch_pause_delay = if_data_out[15:0];
                     next_ch_pause_clk = 1'b1;
                 end
             end
 
-            // channel code rate low
+            // channel code rate
             (REG_OFFSET + 15'h2): begin
-                spi_data_in = '0;
-                if (spi_write) begin
-                    next_ch_code_rate_clk[15:0] = spi_data_out;
-                end
-            end
-
-            // channel code rate high
-            (REG_OFFSET + 15'h3): begin
-                spi_data_in = '0;
-                if (spi_write) begin
-                    next_ch_code_rate_clk[31:16] = spi_data_out;
+                if_data_in = '0;
+                if (if_write) begin
+                    next_ch_code_rate_clk = if_data_out;
                     next_ch_code_rate_done_clk = 1'b1;
                 end
             end
 
-            // channel lo rate low
-            (REG_OFFSET + 15'h4): begin
-                spi_data_in = '0;
-                if (spi_write) begin
-                    next_ch_lo_rate_clk[15:0] = spi_data_out;
-                end
-            end
-
-            // channel lo rate high
-            (REG_OFFSET + 15'h5): begin
-                spi_data_in = '0;
-                if (spi_write) begin
-                    next_ch_lo_rate_clk[31:16] = spi_data_out;
+            // channel lo rate
+            (REG_OFFSET + 15'h3): begin
+                if_data_in = '0;
+                if (if_write) begin
+                    next_ch_lo_rate_clk = if_data_out;
                     next_ch_lo_rate_done_clk = 1'b1;
                 end
             end
 
             // channel accumulators
-            (REG_OFFSET + 15'h10): begin
-                // IP low
-                spi_data_in = ch_ip_reg[15:0];
+            (REG_OFFSET + 15'h7): begin
+                // IP
+                if_data_in = ch_ip_reg;
             end
 
-            (REG_OFFSET + 15'h11): begin
-                // IP high
-                spi_data_in = ch_ip_reg[31:16];
+            (REG_OFFSET + 15'h8): begin
+                // QP
+                if_data_in = ch_qp_reg;
             end
 
-            (REG_OFFSET + 15'h12): begin
-                // QP low
-                spi_data_in = ch_qp_reg[15:0];
+            (REG_OFFSET + 15'h9): begin
+                // IE
+                if_data_in = ch_ie_reg;
             end
 
-            (REG_OFFSET + 15'h13): begin
-                // QP high
-                spi_data_in = ch_qp_reg[31:16];
+            (REG_OFFSET + 15'hA): begin
+                // QE
+                if_data_in = ch_qe_reg;
             end
 
-            (REG_OFFSET + 15'h14): begin
-                // IE low
-                spi_data_in = ch_ie_reg[15:0];
+            (REG_OFFSET + 15'hB): begin
+                // IL
+                if_data_in = ch_il_reg;
             end
 
-            (REG_OFFSET + 15'h15): begin
-                // IE high
-                spi_data_in = ch_ie_reg[31:16];
-            end
-
-            (REG_OFFSET + 15'h16): begin
-                // QE low
-                spi_data_in = ch_qe_reg[15:0];
-            end
-
-            (REG_OFFSET + 15'h17): begin
-                // QE high
-                spi_data_in = ch_qe_reg[31:16];
-            end
-
-            (REG_OFFSET + 15'h18): begin
-                // IL low
-                spi_data_in = ch_il_reg[15:0];
-            end
-
-            (REG_OFFSET + 15'h19): begin
-                // IL high
-                spi_data_in = ch_il_reg[31:16];
-            end
-
-            (REG_OFFSET + 15'h1A): begin
-                // QL low
-                spi_data_in = ch_ql_reg[15:0];
-            end
-
-            (REG_OFFSET + 15'h1B): begin
-                // QL high
-                spi_data_in = ch_ql_reg[31:16];
+            (REG_OFFSET + 15'hC): begin
+                // QL
+                if_data_in = ch_ql_reg;
             end
 
             default: begin 
-                spi_data_in = 16'h0000;
+                if_data_in = 32'h0;
             end
         endcase
 

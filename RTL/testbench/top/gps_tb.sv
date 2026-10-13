@@ -1,8 +1,6 @@
 `timescale 1ns/1ns
 
-`ifdef VIVADO
 `include "common_types.vh"
-`endif
 import common_types_pkg::*;
 
 module gps_tb (
@@ -10,20 +8,24 @@ module gps_tb (
 
     logic gps_clk, core_clk, nrst;
     logic signal_in;
-    logic sck /*verilator public*/;
-    logic sdi /*verilator public*/;
-    logic sdo /*verilator public*/;
-    logic cs /*verilator public*/;
+    logic if_clk /*verilator public*/;
+    logic if_cs /*verilator public*/;
+    logic if_host_oe /*verilator public*/;
+    logic [15:0] if_host_dat /*verilator public*/;
+    logic [15:0] if_dat_in /*verilator public*/;
+    wire [15:0] if_dat;
+
+    assign if_dat = if_host_oe ? if_host_dat : 16'bz;
+    assign if_dat_in = if_dat;
 
     gps dut (
         .gps_clk(gps_clk),
         .core_clk(core_clk),
         .nrst(nrst),
         .signal_in(signal_in),
-        .sck(sck),
-        .sdi(sdi),
-        .sdo(sdo),
-        .cs(cs)
+        .if_clk(if_clk),
+        .if_dat(if_dat),
+        .if_cs(if_cs)
     );
 
     // Clock generation

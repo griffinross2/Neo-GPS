@@ -62,5 +62,8 @@ uint32_t parallel_interface_read(uint16_t addr)
     data = pio_sm_get_blocking(pio, sm);  // Read data
     pio_sm_set_enabled(pio, sm, false);
 
+    // Need to exchange the 16-bit words in the data
+    data = (data << 16) | (data >> 16);
+
     return data;
 }

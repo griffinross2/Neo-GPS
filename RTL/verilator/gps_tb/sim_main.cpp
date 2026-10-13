@@ -10,7 +10,7 @@
 #include "Vgps_tb.h"
 
 #include "sim_sched.h"
-#include "spi_host.h"
+#include "parallel_interface_host.h"
 #include "test_program.h"
 
 double sc_time_stamp()
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
         // Device models tick every cycle; the test program is only resumed once
         // whatever it is blocked on has happened.
-        spi_task(top);
+        pi_task(top);
         sim_service();
 
         // Evaluate model

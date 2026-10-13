@@ -10,11 +10,11 @@ module l1ca_search_unit # (
 ) (
     input logic gps_clk, core_clk, nrst,
     input logic signal_in,
-    output logic [15:0] spi_data_in,
-    input logic [15:0] spi_data_out,
-    input logic [14:0] spi_addr_out,
-    input logic spi_read,
-    input logic spi_write,
+    output logic [31:0] if_data_in,
+    input logic [31:0] if_data_out,
+    input logic [14:0] if_addr_out,
+    input logic if_read,
+    input logic if_write,
 
     output logic search_start_gps,
     output logic [5:0] search_ch
@@ -73,48 +73,41 @@ module l1ca_search_unit # (
     end
 
     always_comb begin
-        spi_data_in = 16'h0000;
+        if_data_in = 32'h0;
         next_search_start = search_start;
         next_search_sv = search_sv;
         next_search_ch = search_ch;
 
-        case (spi_addr_out)
-            // Search 0 control register
+        case (if_addr_out)
+            // Search control register
             (REG_OFFSET): begin
-                // [15] Busy
-                // [14] Start
+                // [31] Busy
+                // [30] Start
                 // [11:6] Channel
                 // [5:0] SV
-                spi_data_in = {search_busy, search_start, 2'd0, search_ch, search_sv};
-                if (spi_write) begin
-                    next_search_start = spi_data_out[14];
-                    next_search_sv = spi_data_out[5:0];
-                    next_search_ch = spi_data_out[11:6];
+                if_data_in = {search_busy, search_start, 18'd0, search_ch, search_sv};
+                if (if_write) begin
+                    next_search_start = if_data_out[30];
+                    next_search_ch = if_data_out[11:6];
+                    next_search_sv = if_data_out[5:0];
                 end
             end
 
-            // Search 0 results - Accumulator
+            // Search results - Accumulator
             (REG_OFFSET + 15'd1): begin
-                spi_data_in = search_acc_out[15:0];
-            end
-            (REG_OFFSET + 15'd2): begin
-                spi_data_in = search_acc_out[31:16];
+                if_data_in = search_acc_out;
             end
 
-            // Search 0 results - code index, start index, doppler index
-            (REG_OFFSET + 15'd3): begin
-                // [15:11] - Start index [4:0]
+            // Search results - code index, start index, doppler index
+            (REG_OFFSET + 15'd2): begin
+                // [20:15] - Doppler index [5:0]
+                // [14:10] - Start index [4:0]
                 // [9:0] Code index [9:0]
-                spi_data_in = {search_start_index, 1'b0, search_code_index};
-            end
-            (REG_OFFSET + 15'd4): begin
-                // [7:6] - reserved
-                // [5:0] - doppler index [5:0]
-                spi_data_in = {10'b0, search_dop_index[5:0]};
+                if_data_in = {11'b0, search_dop_index, search_start_index, search_code_index};
             end
 
             default: begin 
-                spi_data_in = 16'h0000;
+                if_data_in = 32'h0;
             end
         endcase
 

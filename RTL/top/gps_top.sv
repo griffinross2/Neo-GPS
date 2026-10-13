@@ -6,8 +6,8 @@ module gps_top (
     input BTN[0:3],
     input jb_0, jb_1, jb_2, jb_3, jb_6,
     output jb_4, jb_5, jb_7,
-    input ck_io3, ck_io4, ck_io5, 
-    output ck_io6
+    input ck_io3, ck_io4, 
+    inout ck_io26, ck_io27, ck_io28, ck_io29, ck_io30, ck_io31, ck_io32, ck_io33, ck_io34, ck_io35, ck_io36, ck_io37, ck_io38, ck_io39, ck_io40, ck_io41
 );
 
     wire nrst;
@@ -31,11 +31,26 @@ module gps_top (
     assign jb_7 = frontend_cs;
     // assign {sck, dout, cs} = 3'b100;
 
-    wire mcu_sck, mcu_cs, mcu_dout, mcu_din;
-    assign mcu_sck = ck_io3;
+    wire mcu_clk, mcu_cs;
+    wire [15:0] mcu_dat;
+    assign mcu_clk = ck_io3;
     assign mcu_cs = ck_io4;
-    assign mcu_din = ck_io5;
-    assign ck_io6 = mcu_dout;
+    tran t0 (ck_io26, mcu_dat[0]);
+    tran t1 (ck_io27, mcu_dat[1]);
+    tran t2 (ck_io28, mcu_dat[2]);
+    tran t3 (ck_io29, mcu_dat[3]);
+    tran t4 (ck_io30, mcu_dat[4]);
+    tran t5 (ck_io31, mcu_dat[5]);
+    tran t6 (ck_io32, mcu_dat[6]);
+    tran t7 (ck_io33, mcu_dat[7]);
+    tran t8 (ck_io34, mcu_dat[8]);
+    tran t9 (ck_io35, mcu_dat[9]);
+    tran t10 (ck_io36, mcu_dat[10]);
+    tran t11 (ck_io37, mcu_dat[11]);
+    tran t12 (ck_io38, mcu_dat[12]);
+    tran t13 (ck_io39, mcu_dat[13]);
+    tran t14 (ck_io40, mcu_dat[14]);
+    tran t15 (ck_io41, mcu_dat[15]);
 
     logic config_start;
     logic config_busy;
@@ -110,10 +125,9 @@ module gps_top (
         .core_clk(core_clk),
         .nrst(nrst),
         .signal_in(i1),
-        .sck(mcu_sck),
-        .sdi(mcu_din),
-        .sdo(mcu_dout),
-        .cs(mcu_cs)
+        .if_clk(mcu_clk),
+        .if_cs(mcu_cs),
+        .if_dat(mcu_dat)
     );
 
 endmodule

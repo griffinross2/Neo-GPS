@@ -68,10 +68,12 @@ module parallel_interface (
     end
 
     always_ff @(posedge if_clk, posedge if_cs, negedge nrst) begin
-        if (if_cs | !nrst) begin
+        if (if_cs) begin
             state <= ADDR;
             read_if_clk <= 1'b0;
         end else if (!nrst) begin
+            state <= ADDR;
+            read_if_clk <= 1'b0;
             addr_if_clk <= 15'b0;
             write_if_clk <= 1'b0;
             data_out_if_clk <= 32'b0;
