@@ -10,7 +10,8 @@ module gps (
     input logic signal_in,
     input logic if_clk,
     inout wire [15:0] if_dat,
-    input logic if_cs
+    input logic if_cs,
+    output logic epoch_int
 );
 
     logic [31:0] if_data_in;
@@ -52,6 +53,7 @@ module gps (
     );
 
     logic [31:0] if_data_in_ch0;
+    logic epoch_int_ch0;
     l1ca_channel_unit #(
         .REG_OFFSET(15'h20)
     ) channel_unit_0 (
@@ -64,8 +66,10 @@ module gps (
         .if_addr_out(if_addr_out),
         .if_read(if_read),
         .if_write(if_write),
-        .search_start((search0_start_gps && search0_ch == 6'd0))
+        .search_start((search0_start_gps && search0_ch == 6'd0)),
+        .epoch_int(epoch_int_ch0)
     );
 
     assign if_data_in = if_data_in_s0 | if_data_in_ch0;
+    assign epoch_int = epoch_int_ch0;
 endmodule

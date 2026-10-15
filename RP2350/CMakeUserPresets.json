@@ -13,7 +13,7 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "PICO_TOOLCHAIN_PATH": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin"
+                "PICO_TOOLCHAIN_PATH": "C:/Program Files/Arm/GNU Toolchain/bin"
             }
         },
         {
@@ -23,7 +23,7 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "PICO_TOOLCHAIN_PATH": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin"
+                "PICO_TOOLCHAIN_PATH": "C:/Program Files/Arm/GNU Toolchain/bin"
             }
         }
     ]

@@ -1,16 +1,15 @@
 #include "parallel_interface.h"
 
 #include "pico/stdlib.h"
-#include "tusb.h"
 #include "gps_if.h"
-#include "track_l1ca.h"
+#include "l1ca_channel.h"
+#include "l1ca_ephemeris.h"
 
 #include <cmath>
 #include <stdio.h>
 
 int main()
 {
-    tusb_init();
     stdio_init_all();
 
     gps_if_init();
@@ -35,13 +34,12 @@ int main()
         gps_if_start_search(0, 0, sv);
         while (!gps_if_search_done(0))
         {
-            tud_task();
         }
 
         acc = gps_if_search_accumulator(0);
         gps_if_search_code_doppler(0, code, doppler);
 
-        printf("Tracking SV%d: Accumulator = %lu, Code = %0.1f, Doppler = %0.0f\n", sv + 1, acc, code, doppler);
+        printf("SV%d: Accumulator = %lu, Code = %0.1f, Doppler = %0.0f\n", sv + 1, acc, code, doppler);
 
         if (acc > 25000)
         {
@@ -60,7 +58,9 @@ int main()
         double delay_chips = 1023.0 - signal_advance - 0.5;
         delay_chips = fmod(fmod(delay_chips, 1023.0) + 1023.0, 1023.0);
 
-        GPSL1CATracker ch0_track(sv + 1, 19.2e6, 4.02e6, doppler);
+        L1CAEphemeris ephemeris;
+        L1CAChannel ch0_track(19.2e6, 4.02e6, ephemeris);
+        ch0_track.start(sv, doppler, 0);
 
         uint16_t delay_cycles = (uint32_t)llround(delay_chips * 19.2e6 / 1.023e6);
         printf("Signal advance: %.6f chips, delay: %.6f chips (%u cycles)\n", signal_advance, delay_chips,
@@ -77,14 +77,12 @@ int main()
 
         while (!gps_if_channel_is_epoch(0))
         {
-            tud_task();
         }  // Wait and ditch first epoch
 
         while (1)
         {
             while (!gps_if_channel_is_epoch(0))
             {
-                tud_task();
                 // Wait for epoch
             }
 
@@ -96,16 +94,15 @@ int main()
             int32_t il = gps_if_channel_il(0);
             int32_t ql = gps_if_channel_ql(0);
 
-            ch0_track.update_epoch(ip, qp, ie, qe, il, ql);
+            ch0_track.update(ip, qp, ie, qe, il, ql);
             uint32_t code_rate = ch0_track.get_code_rate();
             uint32_t carrier_rate = ch0_track.get_carrier_rate();
             gps_if_set_channel_code_rate(0, code_rate);
             gps_if_set_channel_lo_rate(0, carrier_rate);
 
-            if (ch0_track.get_ms_elapsed() % 1000 == 0)
+            if (ch0_track.get_ms_elapsed() == 5000)
             {
-                printf("C/N0: %.2f dB-Hz, C/N0 (smoothed): %.2f dB-Hz\n", ch0_track.get_cn0(),
-                       ch0_track.get_cn0_smoothed());
+                printf("C/N0: %.2f dB-Hz\n", (float)ch0_track.get_cn0());
             }
         }
     }

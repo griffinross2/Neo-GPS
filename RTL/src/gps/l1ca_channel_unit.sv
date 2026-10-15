@@ -15,8 +15,8 @@ module l1ca_channel_unit # (
     input logic [14:0] if_addr_out,
     input logic if_read,
     input logic if_write,
-
-    input logic search_start
+    input logic search_start,
+    output logic epoch_int
 );
 
     sv_t ch_sv, next_ch_sv; // SV number for channel
@@ -141,6 +141,8 @@ module l1ca_channel_unit # (
         next_ch_lo_rate_gps = ch_lo_rate_gps;
         next_ch_epoch_clear_clk = ch_epoch_clear_clk;
         next_ch_epoch_reg_gps = ch_epoch_reg_gps;
+
+        assign epoch_int = ch_epoch;
 
         if (~|ch_epoch_sync_clk) begin
             next_ch_epoch_clear_clk = 1'b0;

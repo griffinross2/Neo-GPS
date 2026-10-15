@@ -7,6 +7,7 @@ module gps_top (
     input jb_0, jb_1, jb_2, jb_3, jb_6,
     output jb_4, jb_5, jb_7,
     input ck_io3, ck_io4, 
+    output ck_io5,
     inout ck_io26, ck_io27, ck_io28, ck_io29, ck_io30, ck_io31, ck_io32, ck_io33, ck_io34, ck_io35, ck_io36, ck_io37, ck_io38, ck_io39, ck_io40, ck_io41
 );
 
@@ -51,6 +52,9 @@ module gps_top (
     tran t13 (ck_io39, mcu_dat[13]);
     tran t14 (ck_io40, mcu_dat[14]);
     tran t15 (ck_io41, mcu_dat[15]);
+
+    wire epoch;
+    assign ck_io5 = epoch;
 
     logic config_start;
     logic config_busy;
@@ -127,7 +131,8 @@ module gps_top (
         .signal_in(i1),
         .if_clk(mcu_clk),
         .if_cs(mcu_cs),
-        .if_dat(mcu_dat)
+        .if_dat(mcu_dat),
+        .epoch_int(epoch)
     );
 
 endmodule

@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "RP2350",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/release/NeoGPS_RP2350_Firmware.elf",
+            "gdbPath": "C:/Program Files/Arm/GNU Toolchain/bin/arm-none-eabi-gdb.exe",
+            "servertype": "openocd",
+            "serverpath": "C:/tools/openocd/bin/openocd.exe",
+            "configFiles": [
+                "interface/cmsis-dap.cfg",
+                "target/rp2350.cfg"
+            ],
+            "openOCDLaunchCommands": [
+                "adapter speed 5000"
+            ],
+            "runToEntryPoint": "main"
+        }
+    ]
+}
