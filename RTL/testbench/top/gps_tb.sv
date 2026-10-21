@@ -14,6 +14,7 @@ module gps_tb (
     logic [15:0] if_host_dat /*verilator public*/;
     logic [15:0] if_dat_in /*verilator public*/;
     wire [15:0] if_dat;
+    wire epoch_int;
 
     assign if_dat = if_host_oe ? if_host_dat : 16'bz;
     assign if_dat_in = if_dat;
@@ -25,7 +26,8 @@ module gps_tb (
         .signal_in(signal_in),
         .if_clk(if_clk),
         .if_dat(if_dat),
-        .if_cs(if_cs)
+        .if_cs(if_cs),
+        .epoch_int(epoch_int)
     );
 
     // Clock generation

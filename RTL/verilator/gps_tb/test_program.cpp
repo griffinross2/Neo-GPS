@@ -1,7 +1,8 @@
 #include "test_program.h"
 #include "sim_sched.h"
 #include "parallel_interface_host.h"
-#include "track_l1ca.h"
+#include "l1ca_channel.h"
+#include "l1ca_ephemeris.h"
 
 #include <cmath>
 #include <iostream>
@@ -9,7 +10,8 @@
 #include "verilated.h"
 #include "Vgps_tb_gps_tb.h"
 
-GPSL1CATracker *ch0_track;
+L1CAEphemeris ch0_ephemeris;
+L1CAChannel ch0_track(19.2e6, 4.02e6, ch0_ephemeris);
 
 static int32_t get_ip(Vgps_tb *const top)
 {
@@ -96,7 +98,7 @@ static void test_program_body(Vgps_tb *const top)
     double delay_chips = 1023.0 - signal_advance - 0.5;
     delay_chips = fmod(fmod(delay_chips, 1023.0) + 1023.0, 1023.0);
 
-    ch0_track = new GPSL1CATracker(7, 19.2e6, 4.02e6, doppler);
+    ch0_track.start(6, doppler, code);
 
     uint32_t delay_cycles = (uint32_t)llround(delay_chips * 19.2e6 / 1.023e6);
     std::cout << "Signal advance: " << signal_advance << " chips, delay: " << delay_chips
@@ -116,9 +118,19 @@ static void test_program_body(Vgps_tb *const top)
 
     for (int i = 0; i < 30000; i++)
     {
-        while ((pi_read(top, 0x0020) & 0x80000000) == 0)
+        uint32_t stat = 0;
+        while ((stat & 0x80000000) == 0)
         {
+            stat = pi_read(top, 0x0020);
         } // Wait for epoch
+
+        uint32_t epochs_since_last_nav_message = (stat >> 6) & 0x1FFF;
+
+        if (ch0_track.message_received_this_epoch() && epochs_since_last_nav_message != 1)
+        {
+            std::cout << "Mismatch between channel and hardware epoch counter: " << ch0_track.get_epochs_since_last_nav_message() << " vs " << epochs_since_last_nav_message << std::endl;
+            pi_write(top, 0x0020, 0x20000006); // Set clear epoch counter for channel 0
+        }
 
         // Read the I and Q values
         int32_t ip = get_ip(top);
@@ -131,13 +143,27 @@ static void test_program_body(Vgps_tb *const top)
         // std::cout << "Epoch " << i << " at time " << sim_time() << std::endl;
         // std::cout << "I: " << ip << ", Q: " << qp << ", I_E: " << ie << ", Q_E: " << qe << ", I_L: " << il << ", Q_L: " << ql << std::endl;
 
-        ch0_track->update_epoch(ip, qp, ie, qe, il, ql);
-        uint32_t code_rate = ch0_track->get_code_rate();
-        uint32_t carrier_rate = ch0_track->get_carrier_rate();
+        ch0_track.update(ip, qp, ie, qe, il, ql);
+        uint32_t code_rate = ch0_track.get_code_rate();
+        uint32_t carrier_rate = ch0_track.get_carrier_rate();
         pi_write(top, 0x0022, code_rate);    // Write code rate
         pi_write(top, 0x0023, carrier_rate); // Write carrier rate
 
-        // std::cout << "C/N0: " << ch0_track->get_cn0() << " dB-Hz" << std::endl;
+        // Test snapshot and output cn0 every 100ms
+        if (i % 100 == 0)
+        {
+            pi_write(top, 0x0001, 0x1); // Take snapshot
+            pi_write(top, 0x0000, 0x0); // Do nothing for some delay
+
+            uint32_t epoch_chip_snapshot = pi_read(top, 0x0024);
+            uint32_t chip_snapshot = (double)(epoch_chip_snapshot & 0x3FF);
+            uint32_t epoch_counter_snapshot = ((epoch_chip_snapshot >> 16) & 0x1FFF);
+            uint32_t code_snapshot = pi_read(top, 0x0025);
+            uint32_t lo_snapshot = pi_read(top, 0x0026);
+            std::cout << "Snapshot at time " << sim_time() << std::endl;
+            std::cout << "Epoch counter: " << epoch_counter_snapshot << ", Chip: " << chip_snapshot << ", Code: " << code_snapshot << ", LO: " << lo_snapshot << std::endl;
+            std::cout << "C/N0: " << ch0_track.get_cn0() << " dB-Hz" << std::endl;
+        }
     }
 }
 

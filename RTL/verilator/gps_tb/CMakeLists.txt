@@ -5,9 +5,9 @@ add_executable(gps_tb
     parallel_interface_host.cpp
     test_program.cpp
     filters.cpp
-    track_l1ca.cpp
+    l1ca_channel.cpp
     tools.cpp
-    ephm_l1ca.cpp
+    l1ca_ephemeris.cpp
 )
 
 find_package(Threads REQUIRED)
@@ -17,6 +17,7 @@ set(RTL_SOURCES
     ../../testbench/top/gps_tb.sv
     ../../src/gps/gps.sv
     ../../src/parallel_interface/parallel_interface.sv
+    ../../src/gps/global_control_unit.sv
     ../../src/gps/l1ca_ac_pca_search.sv
     ../../src/gps/l1ca_channel.sv
     ../../src/gps/l1ca_search_unit.sv

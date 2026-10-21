@@ -33,6 +33,21 @@ module gps (
         .if_dat(if_dat)
     );
 
+    logic snapshot;
+    global_control_unit #(
+        .REG_OFFSET(15'h00)
+    ) global_control (
+        .gps_clk(gps_clk),
+        .core_clk(core_clk),
+        .nrst(nrst),
+        .if_data_out(if_data_out),
+        .if_addr_out(if_addr_out),
+        .if_read(if_read),
+        .if_write(if_write),
+        .if_data_in(if_data_in),
+        .snapshot(snapshot)
+    );
+
     logic [31:0] if_data_in_s0;
     logic search0_start_gps;
     logic [5:0] search0_ch;
@@ -67,6 +82,7 @@ module gps (
         .if_read(if_read),
         .if_write(if_write),
         .search_start((search0_start_gps && search0_ch == 6'd0)),
+        .snapshot(snapshot),
         .epoch_int(epoch_int_ch0)
     );
 
