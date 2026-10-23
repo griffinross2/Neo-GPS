@@ -46,6 +46,7 @@ assign snapshot = (snapshot_sync_gps == 3'b011) ? 1'b1 : 1'b0;
 
 always_comb begin
     next_snapshot_clk = snapshot_clk;
+    if_data_in = 32'b0;
 
     case (if_addr_out)
         REG_OFFSET + 15'h01: begin
@@ -56,6 +57,7 @@ always_comb begin
         end
 
         default: begin
+            if_data_in = 32'b0;
         end
     endcase
 
