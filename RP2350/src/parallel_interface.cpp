@@ -2,6 +2,7 @@
 
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
+#include "hardware/sync.h"
 
 #include "parallel_interface.pio.h"
 
@@ -38,6 +39,8 @@ void parallel_interface_init()
 
 void parallel_interface_write(uint16_t addr, uint32_t data)
 {
+    uint32_t int_status = save_and_disable_interrupts();
+
     uint32_t addr_word = (uint32_t)(addr & 0x7FFF) << 16;
 
     pio_sm_set_consecutive_pindirs(pio, sm, 2, 16, true);
@@ -47,10 +50,14 @@ void parallel_interface_write(uint16_t addr, uint32_t data)
     pio_sm_set_enabled(pio, sm, true);
     pio_sm_get_blocking(pio, sm);  // Dummy read
     pio_sm_set_enabled(pio, sm, false);
+
+    restore_interrupts(int_status);
 }
 
 uint32_t parallel_interface_read(uint16_t addr)
 {
+    uint32_t int_status = save_and_disable_interrupts();
+
     uint32_t data = 0x0;
     uint32_t addr_word = (uint32_t)(addr & 0x7FFF) << 16 | 0x80000000;
 
@@ -64,6 +71,8 @@ uint32_t parallel_interface_read(uint16_t addr)
 
     // Need to exchange the 16-bit words in the data
     data = (data << 16) | (data >> 16);
+
+    restore_interrupts(int_status);
 
     return data;
 }

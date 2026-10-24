@@ -1,7 +1,9 @@
 #include "l1ca_ephemeris.h"
 
 #include "tools.h"
+#include "constants.h"
 
+#include <stdio.h>
 #include <numbers>
 
 constexpr double L1CA_F = -4.442807633e-10;
@@ -13,10 +15,13 @@ void L1CAEphemeris::update(size_t sv, const std::array<uint8_t, 300>& data)
 {
     uint8_t subframe_id;
     bytes_to_number(&subframe_id, data.data() + 49, sizeof(subframe_id) * 8, 3, false);
+    bytes_to_number(&m_last_time_of_week[sv], data.data() + 30, sizeof(m_last_time_of_week[sv]) * 8, 17, false);
+
+    printf("SV%zu got subframe_id=%u\n", sv + 1, subframe_id);
 
     if (subframe_id == 1)
     {
-        L1CASubframe1_t& subframe1 = m_current_subframe1_data[sv - 1];
+        L1CASubframe1_t& subframe1 = m_current_subframe1_data[sv];
 
         bytes_to_number(&subframe1.week_number, data.data() + 60, sizeof(subframe1.week_number) * 8, 10, false);
         bytes_to_number(&subframe1.ura, data.data() + 72, sizeof(subframe1.ura) * 8, 4, false);
@@ -48,7 +53,7 @@ void L1CAEphemeris::update(size_t sv, const std::array<uint8_t, 300>& data)
     }
     else if (subframe_id == 2)
     {
-        L1CASubframe2_t& subframe2 = m_next_subframe2_data[sv - 1];
+        L1CASubframe2_t& subframe2 = m_next_subframe2_data[sv];
 
         bytes_to_number(&subframe2.iode_2, data.data() + 60, sizeof(subframe2.iode_2) * 8, 8, false);
         int16_t C_rs_raw = 0;
@@ -86,7 +91,7 @@ void L1CAEphemeris::update(size_t sv, const std::array<uint8_t, 300>& data)
     }
     else if (subframe_id == 3)
     {
-        L1CASubframe3_t& subframe3 = m_next_subframe3_data[sv - 1];
+        L1CASubframe3_t& subframe3 = m_next_subframe3_data[sv];
 
         int16_t C_ic_raw = 0;
         bytes_to_number(&C_ic_raw, data.data() + 60, sizeof(C_ic_raw) * 8, 16, true);
@@ -124,20 +129,20 @@ void L1CAEphemeris::update(size_t sv, const std::array<uint8_t, 300>& data)
     }
 
     // Move subframe 2 and 3 to current as a unit
-    if (m_next_subframe2_data[sv - 1].valid && m_next_subframe3_data[sv - 1].valid &&
-        m_next_subframe2_data[sv - 1].iode_2 == m_next_subframe3_data[sv - 1].iode_3)
+    if (m_next_subframe2_data[sv].valid && m_next_subframe3_data[sv].valid &&
+        m_next_subframe2_data[sv].iode_2 == m_next_subframe3_data[sv].iode_3)
     {
-        m_current_subframe2_data[sv - 1] = m_next_subframe2_data[sv - 1];
-        m_current_subframe3_data[sv - 1] = m_next_subframe3_data[sv - 1];
-        m_next_subframe2_data[sv - 1].valid = false;
-        m_next_subframe3_data[sv - 1].valid = false;
+        m_current_subframe2_data[sv] = m_next_subframe2_data[sv];
+        m_current_subframe3_data[sv] = m_next_subframe3_data[sv];
+        m_next_subframe2_data[sv].valid = false;
+        m_next_subframe3_data[sv].valid = false;
     }
 }
 
 void L1CAEphemeris::get_satellite_ecef(size_t sv, double t, double& x, double& y, double& z) const
 {
-    const L1CASubframe2_t& subframe2 = m_current_subframe2_data[sv - 1];
-    const L1CASubframe3_t& subframe3 = m_current_subframe3_data[sv - 1];
+    const L1CASubframe2_t& subframe2 = m_current_subframe2_data[sv];
+    const L1CASubframe3_t& subframe3 = m_current_subframe3_data[sv];
 
     double A = subframe2.sqrt_A * subframe2.sqrt_A;
     double t_k = time_from_epoch(t, subframe2.t_oe);
@@ -159,10 +164,24 @@ void L1CAEphemeris::get_satellite_ecef(size_t sv, double t, double& x, double& y
     z = y_k_prime * std::sin(i_k);
 }
 
+double L1CAEphemeris::get_corrected_gps_time_of_week(size_t sv, uint32_t epoch_counter, uint32_t chip,
+                                                     uint32_t code_phase) const
+{
+    // Code phase is referenced to early chip, so the prompt is L1CA_CHIP_SPACING chips behind
+    double code_phase_chips = chip + (static_cast<double>(code_phase) / std::pow(2.0, 32)) - L1CA_CHIP_SPACING;
+
+    double t_sv = (m_last_time_of_week[sv] * 6.0) + (epoch_counter / 1000.0) +
+                  (code_phase_chips / static_cast<double>(GPS_L1CA_CODE_RATE_CPS));
+
+    double t = t_sv - get_clock_correction(sv, t_sv);
+
+    return t;
+}
+
 double L1CAEphemeris::get_clock_correction(size_t sv, double t) const
 {
-    const L1CASubframe1_t& subframe1 = m_current_subframe1_data[sv - 1];
-    const L1CASubframe2_t& subframe2 = m_current_subframe2_data[sv - 1];
+    const L1CASubframe1_t& subframe1 = m_current_subframe1_data[sv];
+    const L1CASubframe2_t& subframe2 = m_current_subframe2_data[sv];
 
     double t_k = time_from_epoch(t, subframe2.t_oe);
     double E_k = eccentric_anomaly(sv, t_k);
@@ -188,7 +207,7 @@ double L1CAEphemeris::time_from_epoch(double t, double t_epoch) const
 
 double L1CAEphemeris::eccentric_anomaly(size_t sv, double t_k) const
 {
-    const L1CASubframe2_t& subframe2 = m_current_subframe2_data[sv - 1];
+    const L1CASubframe2_t& subframe2 = m_current_subframe2_data[sv];
 
     double A = subframe2.sqrt_A * subframe2.sqrt_A;
     double n_0 = std::sqrt(L1CA_MU / (A * A * A));

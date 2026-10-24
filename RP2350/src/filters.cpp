@@ -1,11 +1,13 @@
 #include "filters.h"
 
+#include "pico/stdlib.h"
+
 FirstOrderPLL::FirstOrderPLL(float noise_bandwidth)
 {
     m_w_0 = noise_bandwidth / 0.25;
 }
 
-float FirstOrderPLL::update(float input)
+float __not_in_flash_func(FirstOrderPLL::update)(float input)
 {
     // Update the accumulator and produce the output
     float code_error = m_w_0 * input;
@@ -13,7 +15,7 @@ float FirstOrderPLL::update(float input)
     return code_error;
 }
 
-void FirstOrderPLL::set_bandwidth(float noise_bandwidth)
+void __not_in_flash_func(FirstOrderPLL::set_bandwidth)(float noise_bandwidth)
 {
     m_w_0 = noise_bandwidth / 0.25;
 }
@@ -26,7 +28,7 @@ SecondOrderPLL::SecondOrderPLL(float noise_bandwidth, float acc0)
     m_acc = acc0;
 }
 
-float SecondOrderPLL::update(float input, float int_time)
+float __not_in_flash_func(SecondOrderPLL::update)(float input, float int_time)
 {
     // Update the accumulator and produce the output
     float code_error;
@@ -37,7 +39,7 @@ float SecondOrderPLL::update(float input, float int_time)
     return code_error;
 }
 
-void SecondOrderPLL::set_bandwidth(float noise_bandwidth)
+void __not_in_flash_func(SecondOrderPLL::set_bandwidth)(float noise_bandwidth)
 {
     m_w_0 = noise_bandwidth / 0.53;
     m_w_0_2 = m_w_0 * m_w_0;
@@ -54,7 +56,7 @@ ThirdOrderPLL::ThirdOrderPLL(float noise_bandwidth, float acc0)
     m_acc2 = acc0;
 }
 
-float ThirdOrderPLL::update(float input, float int_time)
+float __not_in_flash_func(ThirdOrderPLL::update)(float input, float int_time)
 {
     // Update the accumulator and produce the output
     float code_error;
@@ -67,7 +69,7 @@ float ThirdOrderPLL::update(float input, float int_time)
     return code_error;
 }
 
-void ThirdOrderPLL::set_bandwidth(float noise_bandwidth)
+void __not_in_flash_func(ThirdOrderPLL::set_bandwidth)(float noise_bandwidth)
 {
     m_w_0 = noise_bandwidth / 0.7845;
     m_w_0_2 = m_w_0 * m_w_0;
@@ -88,7 +90,7 @@ ThirdOrderFLLAssistedPLL::ThirdOrderFLLAssistedPLL(float noise_bandwidth_fll, fl
     m_acc2 = acc0;
 }
 
-float ThirdOrderFLLAssistedPLL::update(float fll_input, float pll_input, float int_time)
+float __not_in_flash_func(ThirdOrderFLLAssistedPLL::update)(float fll_input, float pll_input, float int_time)
 {
     // Update the accumulator and produce the output
     float code_error;
@@ -103,7 +105,7 @@ float ThirdOrderFLLAssistedPLL::update(float fll_input, float pll_input, float i
     return code_error;
 }
 
-void ThirdOrderFLLAssistedPLL::set_bandwidth(float noise_bandwidth_fll, float noise_bandwidth_pll)
+void __not_in_flash_func(ThirdOrderFLLAssistedPLL::set_bandwidth)(float noise_bandwidth_fll, float noise_bandwidth_pll)
 {
     m_w_0p = noise_bandwidth_pll / 0.7845;
     m_w_0_2p = m_w_0p * m_w_0p;
@@ -121,7 +123,7 @@ SecondOrderFLLAssistedPLL::SecondOrderFLLAssistedPLL(float noise_bandwidth_fll, 
     m_acc1 = acc0;
 }
 
-float SecondOrderFLLAssistedPLL::update(float fll_input, float pll_input, float int_time)
+float __not_in_flash_func(SecondOrderFLLAssistedPLL::update)(float fll_input, float pll_input, float int_time)
 {
     // Update the accumulator and produce the output
     float code_error;
@@ -132,7 +134,7 @@ float SecondOrderFLLAssistedPLL::update(float fll_input, float pll_input, float 
     return code_error;
 }
 
-void SecondOrderFLLAssistedPLL::set_bandwidth(float noise_bandwidth_fll, float noise_bandwidth_pll)
+void __not_in_flash_func(SecondOrderFLLAssistedPLL::set_bandwidth)(float noise_bandwidth_fll, float noise_bandwidth_pll)
 {
     m_w_0p = noise_bandwidth_pll / 0.53;
     m_w_0_2p = m_w_0p * m_w_0p;

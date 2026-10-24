@@ -56,19 +56,22 @@ public:
 
     void update(size_t sv, const std::array<uint8_t, 300>& data);
 
-    uint16_t get_week_number(size_t sv) const { return m_current_subframe1_data[sv - 1].week_number; }
+    uint16_t get_week_number(size_t sv) const { return m_current_subframe1_data[sv].week_number; }
     bool is_ephemeris_valid(size_t sv) const
     {
-        return m_current_subframe1_data[sv - 1].sv_healthy && m_current_subframe1_data[sv - 1].valid &&
-               m_current_subframe2_data[sv - 1].valid && m_current_subframe3_data[sv - 1].valid &&
-               (m_current_subframe1_data[sv - 1].iodc & 0xFF) == m_current_subframe2_data[sv - 1].iode_2 &&
-               m_current_subframe2_data[sv - 1].iode_2 == m_current_subframe3_data[sv - 1].iode_3;
+        return m_current_subframe1_data[sv].sv_healthy && m_current_subframe1_data[sv].valid &&
+               m_current_subframe2_data[sv].valid && m_current_subframe3_data[sv].valid &&
+               (m_current_subframe1_data[sv].iodc & 0xFF) == m_current_subframe2_data[sv].iode_2 &&
+               m_current_subframe2_data[sv].iode_2 == m_current_subframe3_data[sv].iode_3;
     }
+    double get_corrected_gps_time_of_week(size_t sv, uint32_t epoch_counter, uint32_t chip, uint32_t code_phase) const;
     void get_satellite_ecef(size_t sv, double t, double& x, double& y, double& z) const;
     double get_clock_correction(size_t sv, double t) const;
 
 private:
     // Ephemeris data
+    std::array<uint32_t, 32> m_last_time_of_week;
+
     std::array<L1CASubframe1_t, 32> m_current_subframe1_data;
     std::array<L1CASubframe2_t, 32> m_current_subframe2_data;
     std::array<L1CASubframe3_t, 32> m_current_subframe3_data;

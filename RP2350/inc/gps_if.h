@@ -3,19 +3,20 @@
 
 #include <stdint.h>
 
-constexpr uint16_t GPS_SEARCH_GLOBAL_OFFSET = 0x00;
+constexpr uint16_t GPS_GLOBAL_OFFSET = 0x00;
+constexpr uint16_t GPS_GLOBAL_CONTROL = 0x1;
 
 constexpr uint16_t GPS_SEARCH_OFFSET[] = {0x10};
 constexpr uint16_t GPS_SEARCH_CONTROL = 0x0;
 constexpr uint16_t GPS_SEARCH_ACC = 0x1;
 constexpr uint16_t GPS_SEARCH_CODE_START_DOPPLER = 0x2;
 
-constexpr uint16_t GPS_CHANNEL_OFFSET[] = {0x20};
+constexpr uint16_t GPS_CHANNEL_OFFSET[] = {0x20, 0x30, 0x40, 0x50, 0x60, 0x70};
 constexpr uint16_t GPS_CHANNEL_CONTROL = 0x0;
 constexpr uint16_t GPS_CHANNEL_PAUSE = 0x1;
 constexpr uint16_t GPS_CHANNEL_CODE_RATE = 0x2;
 constexpr uint16_t GPS_CHANNEL_LO_RATE = 0x3;
-constexpr uint16_t GPS_CHANNEL_CHIP = 0x4;
+constexpr uint16_t GPS_CHANNEL_EPOCH_CHIP = 0x4;
 constexpr uint16_t GPS_CHANNEL_CODE_PHASE = 0x5;
 constexpr uint16_t GPS_CHANNEL_LO_PHASE = 0x6;
 constexpr uint16_t GPS_CHANNEL_IP = 0x7;
@@ -31,7 +32,7 @@ void gps_if_set_channel_sv(uint8_t channel, uint8_t sv);
 void gps_if_start_search(uint8_t search, uint8_t channel, uint8_t sv);
 bool gps_if_search_done(uint8_t search);
 uint32_t gps_if_search_accumulator(uint8_t search);
-void gps_if_search_code_doppler(uint8_t search, double& code, double& doppler);
+void gps_if_search_code_doppler(uint8_t search, float& code, float& doppler);
 int32_t gps_if_channel_ip(uint8_t channel);
 int32_t gps_if_channel_qp(uint8_t channel);
 int32_t gps_if_channel_ie(uint8_t channel);
@@ -40,7 +41,10 @@ int32_t gps_if_channel_il(uint8_t channel);
 int32_t gps_if_channel_ql(uint8_t channel);
 void gps_if_set_channel_code_rate(uint8_t channel, uint32_t code_rate);
 void gps_if_set_channel_lo_rate(uint8_t channel, uint32_t lo_rate);
-bool gps_if_channel_is_epoch(uint8_t channel);
+bool gps_if_channel_is_epoch(uint8_t channel, uint32_t& epoch_counter);
 void gps_if_channel_pause(uint8_t channel, uint16_t pause);
+void gps_if_reset_epoch_counter(uint8_t channel, uint8_t sv);
+void gps_if_take_snapshot();
+void gps_if_read_snapshot(uint8_t channel, uint32_t& epoch_counter, uint32_t& chip, uint32_t& code_phase);
 
 #endif  // GPS_IF_H

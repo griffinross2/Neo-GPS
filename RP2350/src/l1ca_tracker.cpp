@@ -1,69 +1,57 @@
-#include "l1ca_channel.h"
+#include "l1ca_tracker.h"
 
-#include "constants.h"
+#include "gps_if.h"
 
-#include <cmath>
-#include <numbers>
-#include <string>
+#include "pico/stdlib.h"
 
-void L1CAChannel::start(int sv, double doppler, double code_phase)
+L1CATracker::L1CATracker(const float freq_sample_hz, const float freq_if_hz)
+    : m_freq_sample_hz(freq_sample_hz), m_freq_if_hz(freq_if_hz)
+{
+    reset(0, 0.0f);
+}
+
+void L1CATracker::reset(size_t sv, float doppler)
 {
     m_sv = sv;
+    m_lo_rate = m_freq_if_hz / m_freq_sample_hz;
+    m_code_rate = GPS_L1CA_CODE_RATE_CPS / m_freq_sample_hz;
+    m_cn0 = -100.0f;
+    m_last_mode = L1CA_TRACKING_WIDE_FLL;
+    m_lo_error = doppler;
+    m_code_error = doppler * GPS_L1CA_CODE_RATE_CPS / GPS_L1CA_FREQ_HZ;
+    m_elapsed_time_s = 0.0f;
 
-    // Accumulators
     m_ie = 0;
     m_qe = 0;
     m_ip = 0;
     m_qp = 0;
     m_il = 0;
     m_ql = 0;
-
-    m_cn0_estimator = CN0Estimator<L1CA_CN0_ESTIMATOR_LENGTH>(0.001);
-    m_cn0 = -100.0;
-
-    float code_doppler = doppler * GPS_L1CA_CODE_RATE_CPS / GPS_L1CA_FREQ_HZ;
-    m_code_pll = SecondOrderPLL(L1CA_PULLIN_CODE_PLL_BANDWIDTH_HZ, code_doppler);
-    m_lo_pll = ThirdOrderFLLAssistedPLL(L1CA_PULLIN_LO_FLL_BANDWIDTH_HZ, L1CA_TRACKING_LO_PLL_BANDWIDTH_HZ, doppler);
-
     m_prev_ip = 0;
     m_prev_qp = 0;
 
-    m_ms_elapsed = 0;
+    m_code_pll = SecondOrderPLL(L1CA_PULLIN_CODE_PLL_BANDWIDTH_HZ, m_code_error);
+    m_lo_pll = ThirdOrderFLLAssistedPLL(L1CA_PULLIN_LO_FLL_BANDWIDTH_HZ, 0.0f, m_lo_error);
+    m_cn0_estimator.reset(0.001f);
 
-    m_code_error = code_doppler;
-    m_lo_error = doppler;
-
-#ifdef DEBUG_FILE
-    m_debug_file = std::make_unique<std::ofstream>("l1ca_sv" + std::to_string(sv) + ".csv");
-    *m_debug_file << "ms_elapsed,bit_ms,ip,qp,ie,qe,il,ql,cn0,lo_error,code_error,lo_rate,code_rate\n";
-#endif
-
-    m_bit_sync_histogram.fill(0);
-    m_bit_sync_transition_count = 0;
+    m_bit_synced = false;
+    m_bit_ms = 0;
+    reset_bit_sync();
 
     m_bit_total = 0;
+    m_bit_buffer_count = 0;
     m_bit_buffer.fill(0);
 
-    m_bit_count = 0;
     m_last_time_of_week = -2;
     m_nav_valid = false;
-
     m_epochs_since_last_nav_message = 0;
-
-    m_state = L1CA_CHANNEL_STATE_PULL_IN_FLL;
+    m_epochs_synced = false;
+    m_message_ready = false;
+    m_waiting_message_buffer.fill(0);
 }
 
-void L1CAChannel::stop()
+void __not_in_flash_func(L1CATracker::update)(int ie, int qe, int ip, int qp, int il, int ql, float int_time)
 {
-    m_state = L1CA_CHANNEL_STATE_IDLE;
-}
-
-void L1CAChannel::update(int ip, int qp, int ie, int qe, int il, int ql)
-{
-    if (m_state == L1CA_CHANNEL_STATE_IDLE)
-    {
-        return;
-    }
     m_ie = ie;
     m_qe = qe;
     m_ip = ip;
@@ -71,146 +59,123 @@ void L1CAChannel::update(int ip, int qp, int ie, int qe, int il, int ql)
     m_il = il;
     m_ql = ql;
 
-    update_epoch();
-}
+    L1CATrackingMode mode = m_last_mode;
 
-inline void L1CAChannel::update_epoch()
-{
-    update_cn0();
-    update_filter_bandwidths();
-    loop_filter();
-
-    // Try to transition from pull-in to tracking
-    if (m_state == L1CA_CHANNEL_STATE_PULL_IN_FLL && m_ms_elapsed >= L1CA_PULLIN_TIME_MS)
+    // Decide if we should change the mode
+    if (m_last_mode == L1CA_TRACKING_WIDE_FLL && m_elapsed_time_s > L1CA_PULLIN_TIME_S)
     {
-        printf("SV %d: FLL pull-in complete\n", m_sv);
-        m_state = L1CA_CHANNEL_STATE_PULL_IN_PLL;
+        mode = L1CA_TRACKING_WIDE_PLL;
+    }
+    else if (m_last_mode == L1CA_TRACKING_WIDE_PLL && m_cn0 > L1CA_PULLIN_TO_TRACKING_CN0_THRESHOLD)
+    {
+        mode = L1CA_TRACKING_NARROW_PLL;
     }
 
-    // Try to transition from pull-in to tracking
-    if (m_state == L1CA_CHANNEL_STATE_PULL_IN_PLL && m_cn0 >= L1CA_PULLIN_TO_TRACKING_CN0_THRESHOLD)
+    if (mode == L1CA_TRACKING_WIDE_FLL && mode != m_last_mode)
     {
-        printf("SV %d: Tracking\n", m_sv);
-        m_state = L1CA_CHANNEL_STATE_TRACKING;
-        reset_bit_sync();
-        m_code_pll.reset();
+        m_lo_pll.set_bandwidth(L1CA_PULLIN_LO_FLL_BANDWIDTH_HZ, 0.0f);
+        m_code_pll.set_bandwidth(L1CA_PULLIN_CODE_PLL_BANDWIDTH_HZ);
+    }
+    else if (mode == L1CA_TRACKING_NARROW_FLL && mode != m_last_mode)
+    {
+        m_lo_pll.set_bandwidth(L1CA_PULLIN_LO_FLL_BANDWIDTH_HZ, 0.0f);
+        m_code_pll.set_bandwidth(L1CA_PULLIN_CODE_PLL_BANDWIDTH_HZ);
+    }
+    else if (mode == L1CA_TRACKING_WIDE_PLL && mode != m_last_mode)
+    {
+        m_lo_pll.set_bandwidth(0.0f, L1CA_TRACKING_LO_PLL_BANDWIDTH_HZ);
+        m_code_pll.set_bandwidth(L1CA_PULLIN_CODE_PLL_BANDWIDTH_HZ);
+    }
+    else if (mode == L1CA_TRACKING_NARROW_PLL && mode != m_last_mode)
+    {
+        m_lo_pll.set_bandwidth(0.0f, L1CA_TRACKING_LO_PLL_BANDWIDTH_HZ);
+        m_code_pll.set_bandwidth(L1CA_TRACKING_CODE_PLL_BANDWIDTH_HZ);
+        m_code_pll.reset();  // Switch to carrier aided mode
     }
 
-    // Bit sync
-    if (m_state == L1CA_CHANNEL_STATE_TRACKING)
+    switch (mode)
+    {
+        case L1CA_TRACKING_WIDE_FLL:
+        case L1CA_TRACKING_NARROW_FLL:
+            m_lo_error = m_lo_pll.update(lo_freq_discriminator(), 0.0f, int_time);
+            m_code_error = m_code_pll.update(code_phase_discriminator(), int_time);
+            break;
+        case L1CA_TRACKING_WIDE_PLL:
+        case L1CA_TRACKING_NARROW_PLL:
+            m_lo_error = m_lo_pll.update(0.0f, lo_phase_discriminator(), int_time);
+            m_code_error = m_code_pll.update(code_phase_discriminator(), int_time);
+            break;
+    }
+
+    m_lo_rate = (m_freq_if_hz + m_lo_error) / m_freq_sample_hz;
+    double carrier_aiding =
+        (mode == L1CA_TRACKING_NARROW_PLL) ? (m_lo_error * GPS_L1CA_CODE_RATE_CPS / GPS_L1CA_FREQ_HZ) : 0.0;
+    m_code_rate = (GPS_L1CA_CODE_RATE_CPS + m_code_error + carrier_aiding) / m_freq_sample_hz;
+
+    m_cn0_estimator.update(m_ip, m_qp);
+    m_cn0 = m_cn0_estimator.get_cn0();
+
+    if (mode == L1CA_TRACKING_NARROW_PLL && !m_bit_synced)
     {
         update_bit_sync();
     }
 
-    m_epochs_since_last_nav_message++;
-
-    // Bit recovery
-    if (m_state == L1CA_CHANNEL_STATE_TRACKING_BIT_SYNCED)
+    // Recover a bit
+    if (m_bit_synced && m_bit_ms == 0)
     {
-        update_nav();
+        m_bit_buffer.at(m_bit_buffer_count) = m_bit_total > 0 ? 1 : 0;
+        m_bit_buffer_count++;
+        m_bit_total = 0;
     }
+    m_bit_total += m_ip;
+    m_epochs_since_last_nav_message = (m_epochs_since_last_nav_message + 1) % 6000;
 
-#ifdef DEBUG_FILE
-    *m_debug_file << m_ms_elapsed << "," << m_bit_ms << "," << m_ip << "," << m_qp << "," << m_ie << "," << m_qe << ","
-                  << m_il << "," << m_ql << "," << m_cn0 << "," << m_lo_error << "," << m_code_error << "," << m_lo_rate
-                  << "," << m_code_rate << "\n";
-#endif
+    // Decode
+    nav_decode();
 
-    m_bit_ms = (m_bit_ms + 1) % 20;
-    m_ms_elapsed += 1;
-
-    // Reset accumulators
+    m_last_mode = mode;
     m_prev_ip = m_ip;
     m_prev_qp = m_qp;
+    m_elapsed_time_s += int_time;
+    m_bit_ms = (m_bit_ms + 1) % 20;
 }
 
-inline void L1CAChannel::update_filter_bandwidths()
-{
-    switch (m_state)
-    {
-        case L1CA_CHANNEL_STATE_PULL_IN_FLL:
-        case L1CA_CHANNEL_STATE_PULL_IN_PLL:
-            m_lo_pll.set_bandwidth(L1CA_PULLIN_LO_FLL_BANDWIDTH_HZ, L1CA_TRACKING_LO_PLL_BANDWIDTH_HZ);
-            m_code_pll.set_bandwidth(L1CA_PULLIN_CODE_PLL_BANDWIDTH_HZ);
-            break;
-
-        case L1CA_CHANNEL_STATE_TRACKING:
-            m_lo_pll.set_bandwidth(L1CA_PULLIN_LO_FLL_BANDWIDTH_HZ, L1CA_TRACKING_LO_PLL_BANDWIDTH_HZ);
-            m_code_pll.set_bandwidth(L1CA_TRACKING_CODE_PLL_BANDWIDTH_HZ);
-            break;
-
-        default:
-            break;
-    }
-}
-
-inline void L1CAChannel::loop_filter()
-{
-    switch (m_state)
-    {
-        case L1CA_CHANNEL_STATE_PULL_IN_FLL:
-            m_lo_error = m_lo_pll.update(lo_freq_discriminator(), 0.0, 0.001);
-            break;
-
-        default:
-            m_lo_error = m_lo_pll.update(0.0, lo_phase_discriminator(), 0.001);
-            break;
-    }
-
-    m_code_error = m_code_pll.update(code_phase_discriminator(), 0.001);
-
-    m_lo_rate = (4 * (m_freq_if_hz + m_lo_error)) / m_freq_sample_hz;
-
-    float carrier_aiding =
-        (m_state >= L1CA_CHANNEL_STATE_TRACKING) ? (m_lo_error * GPS_L1CA_CODE_RATE_CPS / GPS_L1CA_FREQ_HZ) : 0.0;
-    m_code_rate = (GPS_L1CA_CODE_RATE_CPS + m_code_error + carrier_aiding) / m_freq_sample_hz;
-}
-
-inline void L1CAChannel::update_cn0()
-{
-    m_cn0_estimator.update(m_ip, m_qp);
-    if (m_cn0_estimator.is_full())
-    {
-        m_cn0 = m_cn0_estimator.get_cn0();
-    }
-}
-
-inline double L1CAChannel::code_phase_discriminator()
+float __not_in_flash_func(L1CATracker::code_phase_discriminator)()
 {
     // Normalized early-late power discriminator
-    float code_discriminator = 0.0;
+    float code_discriminator = 0.0f;
     float power_early = std::sqrt(m_ie * m_ie + m_qe * m_qe);
     float power_late = std::sqrt(m_il * m_il + m_ql * m_ql);
-    if (power_early + power_late != 0)
+    if (power_early + power_late != 0.0f)
     {
-        code_discriminator = 0.5 * ((power_early - power_late) / (power_early + power_late));
+        code_discriminator = 0.5f * ((power_early - power_late) / (power_early + power_late));
     }
 
     return code_discriminator;
 }
 
-inline double L1CAChannel::lo_phase_discriminator()
+float __not_in_flash_func(L1CATracker::lo_phase_discriminator)()
 {
-    float lo_discriminator = 0;
+    float lo_discriminator = 0.0f;
     if (m_ip != 0)
     {
-        lo_discriminator = std::atan(static_cast<float>(m_qp) / static_cast<float>(m_ip)) / (2.0 * std::numbers::pi);
+        lo_discriminator = std::atan(static_cast<float>(m_qp) / static_cast<float>(m_ip)) / (2.0f * std::numbers::pi);
     }
 
     return lo_discriminator;
 }
 
-inline double L1CAChannel::lo_freq_discriminator()
+float __not_in_flash_func(L1CATracker::lo_freq_discriminator)()
 {
     float cross = m_prev_ip * m_qp - m_ip * m_prev_qp;
     float dot = m_prev_ip * m_ip + m_prev_qp * m_qp;
 
-    float lo_discriminator_fll = atan2(cross, dot) / (2.0 * std::numbers::pi * 0.001);  // Hz
+    float lo_discriminator_fll = atan2(cross, dot) / (2.0f * std::numbers::pi * 0.001f);  // Hz
 
     return lo_discriminator_fll;
 }
 
-inline void L1CAChannel::update_bit_sync()
+void __not_in_flash_func(L1CATracker::update_bit_sync)()
 {
     // Check for a bit transition
     if (m_prev_ip * m_ip < 0)
@@ -245,32 +210,24 @@ inline void L1CAChannel::update_bit_sync()
             // Want to move bit_ms back by the highest index
             // = adding (20 - highest_index) then mod 20
             m_bit_ms = (m_bit_ms + (20 - highest_index)) % 20;
-            m_state = L1CA_CHANNEL_STATE_TRACKING_BIT_SYNCED;
-            // printf("SV %d: Bit synchronization complete\n", m_sv);
-
-            for (size_t i = 0; i < 20; i++)
-            {
-                // printf("%d ", m_bit_sync_histogram[i]);
-            }
-            // printf("\n");
+            m_bit_synced = true;
         }
         else
         {
-            m_state = L1CA_CHANNEL_STATE_TRACKING;
-            // printf("SV %d: Bit synchronization failed\n", m_sv);
+            m_bit_synced = false;
         }
 
         reset_bit_sync();
     }
 }
 
-inline void L1CAChannel::reset_bit_sync()
+void __not_in_flash_func(L1CATracker::reset_bit_sync)()
 {
     m_bit_sync_histogram.fill(0);
     m_bit_sync_transition_count = 0;
 }
 
-inline bool L1CAChannel::check_parity(uint8_t flip, std::array<bool, 10>& subword_flips)
+bool __not_in_flash_func(L1CATracker::check_parity)(uint8_t flip, std::array<bool, 10>& subword_flips)
 {
     // Reference: IS-GPS-200N, Table 20-XIV, pg. 139
     uint8_t D30 = flip;
@@ -323,17 +280,9 @@ inline bool L1CAChannel::check_parity(uint8_t flip, std::array<bool, 10>& subwor
     return true;
 }
 
-inline void L1CAChannel::update_nav()
+void __not_in_flash_func(L1CATracker::nav_decode)()
 {
-    if (m_bit_ms == 0)
-    {
-        m_bit_buffer.at(m_bit_count) = m_bit_total > 0 ? 1 : 0;
-        m_bit_count++;
-        m_bit_total = 0;
-    }
-    m_bit_total += m_ip;
-
-    if (m_bit_count >= 300)
+    if (m_bit_buffer_count >= 300)
     {
         constexpr std::array<uint8_t, 8> preamble_norm = {1, 0, 0, 0, 1, 0, 1, 1};
         constexpr std::array<uint8_t, 8> preamble_inv = {0, 1, 1, 1, 0, 1, 0, 0};
@@ -348,7 +297,7 @@ inline void L1CAChannel::update_nav()
         {
             // No preamble found
             std::copy(m_bit_buffer.begin() + 1, m_bit_buffer.end(), m_bit_buffer.begin());
-            m_bit_count--;
+            m_bit_buffer_count--;
             return;
         }
 
@@ -358,13 +307,12 @@ inline void L1CAChannel::update_nav()
         {
             // Parity check failed
             std::copy(m_bit_buffer.begin() + 1, m_bit_buffer.end(), m_bit_buffer.begin());
-            m_bit_count--;
-            // printf("par\n");
+            m_bit_buffer_count--;
             return;
         }
 
         // Flip the bits if necessary
-        for (size_t i = 0; i < 300; i++)
+        for (size_t i = 0; i < m_bit_buffer.size(); i++)
         {
             if (subword_flips[i / 30])
             {
@@ -378,8 +326,7 @@ inline void L1CAChannel::update_nav()
         {
             // Invalid subframe ID
             std::copy(m_bit_buffer.begin() + 1, m_bit_buffer.end(), m_bit_buffer.begin());
-            m_bit_count--;
-            // printf("sfid\n");
+            m_bit_buffer_count--;
             return;
         }
 
@@ -403,26 +350,16 @@ inline void L1CAChannel::update_nav()
         // We are currently one 1ms past the start of the next subframe, so we reset to 1
         m_epochs_since_last_nav_message = 1;
 
-        // Success
-        printf("GPS L1 SV %d found subframe %d at %d ms. TOW = %d\n", m_sv, subframe_id, m_ms_elapsed, time_of_week);
+        // Copy the decoded message to the waiting message buffer
+        std::copy(m_bit_buffer.begin(), m_bit_buffer.end(), m_waiting_message_buffer.begin());
+        m_message_ready = true;
 
-        m_ephemeris.update(m_sv, m_bit_buffer);
-
-        m_bit_count = 0;
+        m_bit_buffer_count = 0;
         return;
     }
 }
 
-double L1CAChannel::get_corrected_gps_time_of_week() const
+void L1CATracker::sync_epoch_counter()
 {
-    // Code phase is referenced to early chip, so the prompt is L1CA_CHIP_SPACING chips behind
-    // double code_phase_chips = m_code_gen.chip + m_code_phase - L1CA_CHIP_SPACING;
-
-    // double t_sv = (m_last_time_of_week * 6.0) + (m_epochs_since_last_nav_message / 1000.0) +
-    //               (code_phase_chips / GPS_L1CA_CODE_RATE_CPS);
-
-    // double t = t_sv - m_ephemeris.get_clock_correction(m_sv, t_sv);
-    double t = 0.0;
-
-    return t;
+    m_epochs_synced = true;
 }

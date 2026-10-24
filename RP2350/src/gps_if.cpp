@@ -17,7 +17,7 @@ void gps_if_clear_channel(uint8_t channel)
 {
     parallel_interface_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CONTROL, 0x40000000);  // set clear
     sleep_us(100);
-    parallel_interface_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CONTROL, 0x40000000);  // clear clear
+    parallel_interface_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CONTROL, 0x00000000);  // clear clear
 }
 
 void gps_if_set_channel_sv(uint8_t channel, uint8_t sv)
@@ -38,17 +38,17 @@ uint32_t gps_if_search_accumulator(uint8_t search)
     return acc;
 }
 
-void gps_if_search_code_doppler(uint8_t search, double& code, double& doppler)
+void gps_if_search_code_doppler(uint8_t search, float& code, float& doppler)
 {
     uint32_t code_doppler_data = parallel_interface_read(GPS_SEARCH_OFFSET[search] + GPS_SEARCH_CODE_START_DOPPLER);
-    code = (double)(code_doppler_data & 0x3FF);
-    code -= (double)((code_doppler_data >> 10) & 0x1F) * (1.023e6 / 19.2e6);
+    code = (float)(code_doppler_data & 0x3FF);
+    code -= (float)((code_doppler_data >> 10) & 0x1F) * (1.023e6 / 19.2e6);
 
     uint32_t dop_data = (code_doppler_data >> 15) & 0x3F;
     uint32_t doppler_sign = ((dop_data >> 5) & 0x1);
     int8_t doppler_int =
         (int8_t)(dop_data + (doppler_sign << 6) + (doppler_sign << 7));  // Sign extend to 8 bits then convert to int
-    doppler = (double)doppler_int * 250.0;
+    doppler = (float)doppler_int * 250.0;
 }
 
 bool gps_if_search_done(uint8_t search)
@@ -113,9 +113,10 @@ void gps_if_set_channel_lo_rate(uint8_t channel, uint32_t lo_rate)
     parallel_interface_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_LO_RATE, lo_rate);
 }
 
-bool gps_if_channel_is_epoch(uint8_t channel)
+bool gps_if_channel_is_epoch(uint8_t channel, uint32_t& epoch_counter)
 {
     uint32_t status = parallel_interface_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CONTROL);
+    epoch_counter = (status >> 6) & 0x1FFF;
     if (status & 0x80000000)
     {
         return true;
@@ -126,4 +127,23 @@ bool gps_if_channel_is_epoch(uint8_t channel)
 void gps_if_channel_pause(uint8_t channel, uint16_t pause)
 {
     parallel_interface_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_PAUSE, (uint32_t)pause);
+}
+
+void gps_if_reset_epoch_counter(uint8_t channel, uint8_t sv)
+{
+    parallel_interface_write(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CONTROL,
+                             0x20000000 | (sv & 0x3F));  // reset epoch counter
+}
+
+void gps_if_take_snapshot()
+{
+    parallel_interface_write(GPS_GLOBAL_OFFSET + GPS_GLOBAL_CONTROL, 0x1);  // take snapshot
+}
+
+void gps_if_read_snapshot(uint8_t channel, uint32_t& epoch_counter, uint32_t& chip, uint32_t& code_phase)
+{
+    uint32_t epoch_chip = parallel_interface_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_EPOCH_CHIP);
+    epoch_counter = (epoch_chip >> 16) & 0x1FFF;
+    chip = epoch_chip & 0x3FF;
+    code_phase = parallel_interface_read(GPS_CHANNEL_OFFSET[channel] + GPS_CHANNEL_CODE_PHASE);
 }

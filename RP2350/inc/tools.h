@@ -10,13 +10,13 @@ float cn0_svn_estimator(std::array<int, N>& ip_buffer, std::array<int, N>& qp_bu
 {
     // Modified from GNSS-SDR
 
-    float SNR = 0.0;
-    float SNR_dB_Hz = 0.0;
-    float Psig = 0.0;
-    float Ptot = 0.0;
-    if (length == 0 || int_time == 0.0)
+    float SNR = 0.0f;
+    float SNR_dB_Hz = 0.0f;
+    float Psig = 0.0f;
+    float Ptot = 0.0f;
+    if (length == 0 || int_time == 0.0f)
     {
-        return -100.0;
+        return -100.0f;
     }
     for (int i = 0; i < length; i++)
     {
@@ -27,12 +27,12 @@ float cn0_svn_estimator(std::array<int, N>& ip_buffer, std::array<int, N>& qp_bu
     Psig = Psig * Psig;
     Ptot /= static_cast<float>(length);
     float aux = Ptot - Psig;
-    if (aux == 0.0)
+    if (aux == 0.0f)
     {
-        return -100.0;
+        return -100.0f;
     }
     SNR = Psig / aux;
-    SNR_dB_Hz = 10.0 * std::log10(SNR) - 10.0 * std::log10(int_time);
+    SNR_dB_Hz = 10.0f * std::log10(SNR) - 10.0f * std::log10(int_time);
 
     return SNR_dB_Hz;
 }
@@ -42,16 +42,16 @@ float cn0_m2m4_estimator(std::array<int, N>& ip_buffer, std::array<int, N>& qp_b
 {
     // Modified from GNSS-SDR
 
-    float SNR_aux = 0.0;
-    float SNR_dB_Hz = 0.0;
-    float Psig = 0.0;
-    float m_2 = 0.0;
-    float m_4 = 0.0;
+    float SNR_aux = 0.0f;
+    float SNR_dB_Hz = 0.0f;
+    float Psig = 0.0f;
+    float m_2 = 0.0f;
+    float m_4 = 0.0f;
     float aux;
     const auto n = static_cast<float>(length);
-    if (length == 0 || int_time == 0.0)
+    if (length == 0 || int_time == 0.0f)
     {
-        return -100.0;
+        return -100.0f;
     }
     for (int i = 0; i < length; i++)
     {
@@ -69,27 +69,27 @@ float cn0_m2m4_estimator(std::array<int, N>& ip_buffer, std::array<int, N>& qp_b
     if (std::isnan(aux))
     {
         denominator = m_2 - Psig;
-        if (denominator == 0)
+        if (denominator == 0.0f)
         {
-            return -100.0;
+            return -100.0f;
         }
         SNR_aux = Psig / denominator;
     }
     else
     {
         denominator = m_2 - aux;
-        if (denominator == 0)
+        if (denominator == 0.0f)
         {
-            return -100.0;
+            return -100.0f;
         }
         SNR_aux = aux / denominator;
     }
 
-    if (SNR_aux == 0)
+    if (SNR_aux == 0.0f)
     {
-        return -100.0;
+        return -100.0f;
     }
-    SNR_dB_Hz = 10.0 * std::log10(SNR_aux) - 10.0 * std::log10(int_time);
+    SNR_dB_Hz = 10.0f * std::log10(SNR_aux) - 10.0f * std::log10(int_time);
 
     return SNR_dB_Hz;
 }
@@ -100,12 +100,15 @@ class CN0Estimator
 public:
     CN0Estimator() = default;
 
-    CN0Estimator(float int_time) : m_int_time(int_time)
+    void reset(float int_time)
     {
-        m_cn0 = -100.0;
+        m_cn0 = -100.0f;
         m_length = 0;
         m_index = 0;
+        m_int_time = int_time;
     }
+
+    CN0Estimator(float int_time) { reset(int_time); }
 
     void update(int ip, int qp)
     {
@@ -125,10 +128,10 @@ public:
     bool is_full() { return m_length >= N; }
 
 private:
-    float m_int_time = 0.0;
+    float m_int_time = 0.0f;
     std::array<int, N> m_ip_buffer;
     std::array<int, N> m_qp_buffer;
-    float m_cn0 = -100.0;
+    float m_cn0 = -100.0f;
     size_t m_length = 0;
     size_t m_index = 0;
 };
