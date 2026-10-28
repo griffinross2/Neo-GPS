@@ -1,11 +1,15 @@
 # Neo-GPS
 Neo-GPS is my second take on creating a custom GPS receiver, taking into account the lessons I learned previously and seeking to do everything as custom as possible.
 
+## Disclaimer
+This project was made for my own learning and interest. It is NOT a professional implementation of a GPS receiver nor is it ever likely to be in a complete or reliable state.
+It should be used for your learning and interest too, not for any real-world use.
+
 ## Goals
 * Fully-functioning GPS L1 C/A receiver.
 * Custom implementation of HDL and firmware modules wherever practical.
 * Testing infrastructure with testbenches for all modules.
-* Use of open-source software and tools (e.g. avoid Vivado until synthesis, instead using Verilator for simulation.
+* Use of open-source software and tools (e.g. avoid Vivado until synthesis, instead using Verilator for simulation).
 
 ## Basic Implementation Concepts
 To demodulate and track, we need fast real-time hardware, so an FPGA is the best choice. However, decoding ephemeris and solving the navigation equations requires memory and complex
@@ -20,33 +24,34 @@ and then sample the signal. Up to 2-bit I and 2-bit Q samples are then presented
 
 I will also implement a micro-SD logger on the FPGA to log raw samples and/or other data for testing purposes.
 
-## Progress
-### Week of 5/4/26
-Exams are finishing up and I can begin the project. I've started by implementing some automation to compile and run testbench simulations using Verilator in RTL/Simulated. I am also
-starting to think about how I want the SD controller to work and start writing it.
+## Usage
+This project is split into several directories:
 
-### Week of 7/20/26
-The SD controller is done. It buffers sample data and then burst writes to the SD card. It can occasionally lag due to internal processes in the SD card, causing the buffer to overrun.
-However, with a few attempts I can get recordings several minutes long. After the controller was finished I started to work on the L1 C/A acquisition. I started by bringing in the
-module from my old repository. Because I don't want to rely on Vivado IP this time, I had to spend some time writing my own FFT. The design is simple, set at length 4096, and
-can be configured for forward or inverse at runtime, as well as no scaling or 1-bit per stage scaling. It uses a pretty small amount of BRAM and DSP resources on my FPGA, and should be
-fast enough for what I need it for. After some trouble, I got it working and adapted the acquisition module to use it instead of the Xilinx IP. The simulation for the whole module was
-slow, but I was able to greatly speed it up by compiling the verilated RTL in release mode. However, this revealed another problem which is that the full wavefile can't be opened by
-GTKWave, presumably because the file is too big. I may try breaking the wavefile at certain points to get multiple smaller ones instead.
+### Hardware
+This folder contains KiCAD projects and libraries. There is a frontend board used with the FPGA dev board, an SD card board also used with the FPGA, and a project for the full custom board.
+As of writing, only the frontend is in use. The SD card board was not ordered, and the full custom board is in development still. Use KiCAD 10.
 
-### 8/18/26
-After a lot of work, I was able to complete the l1ca_ac_pca_search and l1ca_channel modules which handle acquiring and tracking satellites, respectively, and the accompanying registers. 
-The search module mostly uses a 50MHz clock (core_clk) to speed up the FFT, and I decided to just keep all of the registers in the core_clk domain, so there is a lot of CDC to handle that.
-All of the registers and CDC logic are in l1ca_search_unit and l1ca_channel_unit modules that can be duplicated easily to add more search and channel units. The gps_tb Verilator testbench 
-provides an emulated SPI host. Claude figured out how to make a thread in the C++ code where we can just perform blocking SPI write and read calls to really easily access the registers. 
-After this, I was able to port over the l1ca_track.cpp and some other code from the C++ simulation in my old repo and run a full simulation of acquiring, then locking a channel. HUGE.
+### Simulation
+This is a C++ simulation of a GPS receiver supporting GPS L1 C/A and Galileo E1 currently. It takes in a binary signal recording file which is just 1-bit I samples packed little-endian.
+Samples are not included, but I may add a link to some at some point. The core of the simulator in `src/` and `inc/` is compiled as a library. The examples in `tests/` use it, including
+`solve` which is a full simulation of acquisition, tracking, and solving for position using GPS and Galileo. The simulation depends on FFTW (included) and Eigen (installed by CMake).
 
-After that, I started writing a skeleton for and ESP32 to be able to access the registers. I got the RTL to synthesize and go on to the FPGA tonight and ran a test with the ESP32 searching
-every GPS satellite. It worked and I got strong signals from 4 satellites and a weaker one from a 5th. Also HUGE. Next, I can try tracking a channel using the ESP32. To keep going though,
-I don't want to use an SPI connection. We will be pushing it with latency and throughput when adding more channels, especially Galileo. There aren't many choices for parellel interfaces with
-common microcontrollers. Since I will be using an STM32 for a custom board version of this, I want to try to make an interface compatible with the FMC (flexible memory controller)
-available on the STM. We will have at least 16 data lines in parallel, and I will probably change all of the registers to be 32-bit. I might also just choose to use an Octo-SPI instead
-depending on how things look with the FMC.
+To build and run, make sure you have a modern C++ compiler and CMake installed. Use CMake to build and run on of the test targets. It should install the needed dependencies automatically.
+This software has only been tested on Windows but should work elsewhere.
 
-I will have to pause for a bit as I move back to school. The next steps after that are the ESP32 tracking test and working on designing a custom board. I will also start to implement Galileo
-search and tracking. This should go much smoother as it is pretty similar on the hardware side to GPS.
+### RTL
+The RTL directory contains the RTL for the FPGA which, for testing, was a Spartan-7 on an Arty S7-50 board. `src/` contains modules. `testbench/` contains top-level testbenches for simulation. 
+`top/` contains top-level files used with Vivado for on-board testing. `constraints/` contains .xdc constraints files for Vivado. `verilator/` contains CMake files and C++ testbenches for 
+simulating with Verilator. `scripts/` contains TCL scripts for running Vivado.
+
+To simulate with Verilator, first make sure you have a working installation of Verilator and CMake. Make sure the VERILATOR_ROOT environment variable is set. Then use the `verilator.py` script. 
+This script helps to build and run the testbenches. Setting up a new testbench requires making one in `testbenches/` and a corresponding `CMakeLists.txt` and `sim_main.cpp` in the `verilator/`
+folder. Use the examples given as a template.
+
+To synthesize using Vivado, first make sure yuou have Vivado installed. I then added it to my PATH, but you could use the path to it directly in `vivado.py`. If you are making a new top-level
+file, add it to `top/` and make a corresponding TCL script in `scripts/`. Then you can use the python script to initialize Vivado with the project. You will probably want to use the `-g` option
+to actually open the Vivado GUI, unless you set it up to do everything automatically using the TCL script.
+
+### RP2350
+This folder contains the code used with Raspberry Pi Pico 2 board for testing. The Pi Pico SDK is pulled in as a Git submodule. Make sure you pull that and also install the Arm GNU Toolchain.
+Then, you can modify `CMakeUserPresets.json` with your path to the toolchain or setup your own CMake configuration. Then just use CMake to build.
